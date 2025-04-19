@@ -1,175 +1,180 @@
 # bonsai-devops
 DevOps Capstone Project implementing CI/CD pipeline for a Bonsai plant ecommerce application using Terraform, Docker and Kubernetes on AWS
 
-## Prerequisites
+## Project Structure
 
-### Backend Prerequisites:
-- [Python 3.9+](https://www.python.org/downloads/)
-- [PostgreSQL 13+](https://www.postgresql.org/download/)
-- [Virtual Environment (`venv`)](https://docs.python.org/3/library/venv.html)
-- [AWS CLI (for S3 integration)](https://aws.amazon.com/cli/)
+```
+devops-test/
+├── apps/                 # Application code
+│   ├── backend/         # Django backend application
+│   └── frontend/        # React frontend application
+├── docs/                # Project documentation
+├── infra/               # Infrastructure configuration
+│   ├── dockerfiles/     # Docker build configurations
+│   ├── k8s/             # Kubernetes manifests
+│   └── terraform/       # Infrastructure as Code
+├── .env                 # Environment variables (not in version control)
+├── .gitignore          # Git ignore rules
+├── docker-compose.yml   # Docker Compose configuration
+├── LICENSE             # License file
+└── README.md           # This file
+```
 
-### Frontend Prerequisites:
-- [Node.js 18+](https://nodejs.org/)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+## Local Development Setup
 
-## Getting Started
+### Prerequisites
 
-### Clone the Repository
+- Docker and Docker Compose installed
+- Git
+- Node.js (for frontend development)
+- Python 3.8+ (for backend development)
+
+### Environment Setup
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/mikhail-w/bonsai-devops.git
+git clone https://github.com/mikhail-w/bonsai-devops
 cd bonsai-devops
 ```
 
-## Environment Variables
-
-Ensure you configure your environment variables for both the **frontend** and **backend**.
-
-### Frontend (`.env` in `apps/frontend/`)
-```env
-# Environment Configuration
-VITE_ENV=development
-
-# API Configuration
-VITE_API_BASE_URL=http://127.0.0.1:8000
-VITE_API_URL=http://127.0.0.1:8000/api/
-
-# External Services (Replace with your own API keys in production)
-VITE_WEATHER_API_KEY=your_open-weather_api_key
-VITE_PAYPAL_CLIENT_ID=your_paypal_client_id
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-VITE_GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_api_key
-
-# AWS S3 Configuration (Optional - only needed if using S3 for storage)
-VITE_S3_BUCKET=your_s3_bucket_name
-VITE_S3_REGION=your_s3_region
-VITE_S3_PATH=your_s3_bucket_path
+2. Create environment file at the project root:
+```bash
+# Make sure you're in the project root directory (devops-test/)
+touch .env
 ```
 
-### Backend (`.env` in `apps/backend/`)
-```env
-# Django Configuration
-DJANGO_SECRET_KEY=django-insecure-your-secret-key-for-development
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+Configure your `.env` file with the following variables (all environment variables must be set in a single `.env` file at the project root):
+```bash
+# Environment Configuration
+ENVIRONMENT=development
+DOMAIN_NAME=localhost
 
-# Database Configuration (Default PostgreSQL settings)
-DB_USER=postgres
-DB_PASSWORD=password
+# Database Configuration
 DB_NAME=bonsai_store
-DB_HOST=localhost
+DB_USER=<your-db-user>
+DB_PASSWORD=<your-db-password>
+DB_HOST=db
 DB_PORT=5432
 
-# OpenAI Configuration (Optional - only needed for AI features)
-OPENAI_API_KEY=your_openai_api_key
+# AWS RDS Configuration (Production)
+AWS_RDS_HOST=<your-rds-endpoint>
+AWS_RDS_PORT=5432
+AWS_RDS_DB_NAME=<your-rds-db-name>
+AWS_RDS_USER=<your-rds-user>
+AWS_RDS_PASSWORD=<your-rds-password>
 
-# AWS S3 Configuration (Optional - only needed if using S3 for storage)
-AWS_ACCESS_KEY_ID=None
-AWS_SECRET_ACCESS_KEY=None
-AWS_STORAGE_BUCKET_NAME=None
-AWS_S3_REGION_NAME=None
-AWS_S3_CUSTOM_DOMAIN=None
+# Backend Configuration
+DEBUG=True
+SECRET_KEY=<your-django-secret-key>
+ALLOWED_HOSTS=localhost,127.0.0.1,backend,*.amazonaws.com,${DOMAIN_NAME}
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://frontend,https://${DOMAIN_NAME}
+LOAD_INITIAL_DATA=True
+
+# Admin Credentials
+DJANGO_SUPERUSER_USERNAME=<your-admin-username>
+DJANGO_SUPERUSER_EMAIL=<your-admin-email>
+DJANGO_SUPERUSER_PASSWORD=<your-admin-password>
+
+# API Configuration
+API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://localhost:8000
+VITE_API_URL=${VITE_API_BASE_URL}/api
+VITE_MEDIA_URL=${VITE_API_BASE_URL}/media
+VITE_STATIC_URL=${VITE_API_BASE_URL}/static
+
+# AWS S3 Configuration (Production)
+AWS_ACCESS_KEY_ID=<your-aws-access-key>
+AWS_SECRET_ACCESS_KEY=<your-aws-secret-key>
+AWS_STORAGE_BUCKET_NAME=<your-bucket-name>
+AWS_S3_REGION_NAME=us-east-1
+AWS_S3_CUSTOM_DOMAIN=${AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com
+
+# Frontend Configuration - API Keys
+VITE_WEATHER_API_KEY=<your-weather-api-key>
+VITE_PAYPAL_CLIENT_ID=<your-paypal-client-id>
+VITE_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
+VITE_GOOGLE_CLOUD_VISION_API_KEY=<your-google-cloud-vision-api-key>
+
+# Feature Flags
+VITE_ENABLE_CHAT=true
+VITE_ENABLE_REVIEWS=true
+VITE_ENABLE_BLOG=true
+
+# Authentication
+VITE_AUTH_TOKEN_KEY=bonsai_auth_token
+VITE_REFRESH_TOKEN_KEY=bonsai_refresh_token
 ```
 
-> **Important Notes for Local Development:**
-> 1. The above values are suitable for local development only. Use proper secure values in production.
-> 2. For local development, you only need to set up the database configuration and Django secret key.
-> 3. External service API keys (OpenAI, Google Maps, etc.) are optional and only needed if you want to use those specific features.
-> 4. AWS S3 configuration is optional. The application will use local file storage by default.
-> 5. Make sure to keep your `.env` files out of version control by adding them to `.gitignore`.
 
-## Setup Instructions
 
-### Frontend Setup
+### Running with Docker Compose
+
+1. Build and start all services:
 ```bash
-cd apps/frontend
-npm install
-npm run dev
+docker-compose up --build
 ```
 
-### Backend Setup
+2. To run in detached mode (in the background):
 ```bash
-cd apps/backend
-python -m venv venv
-source venv/bin/activate  
-pip install -r requirements.txt
+docker-compose up -d --build
 ```
 
-### Database Setup
-```bash
-sudo -u postgres psql
-CREATE DATABASE bonsai_store;
-CREATE USER postgres WITH PASSWORD 'password';
-ALTER USER postgres WITH SUPERUSER CREATEROLE CREATEDB;
-```
 
-### Apply Migrations & Load Data
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-**Important Note on Data Loading Order:**
-When loading fixtures, you must follow this specific order to maintain referential integrity:
-
-```bash
-# First load users (since other models depend on them)
-python manage.py loaddata users.json
-
-# Then load products
-python manage.py loaddata products.json
-
-# Then load posts
-python manage.py loaddata posts.json
-
-# Then load reviews (which depend on users and products)
-python manage.py loaddata reviews.json
-
-# Finally load comments (which depend on users and posts)
-python manage.py loaddata comments.json
-```
-
-**Note:** If you encounter foreign key constraint errors, ensure that the user IDs in your fixture files match the actual user IDs in your database. The reviews.json file should only reference user IDs that exist in your users.json file.
-
-### Create Django Superuser
-To access the Django admin panel, you need to create a superuser account:
-
-```bash
-python manage.py createsuperuser
-```
-
-Follow the prompts to set up your admin account:
-- Enter a username (e.g., 'admin')
-- Provide an email address
-- Create a strong password
-
-Once created, you can access the Django admin panel at:
-`http://127.0.0.1:8000/admin/`
-
-The admin panel gives you access to manage:
-- Users and User Profiles
-- Products
-- Reviews
-- Orders and Order Items
-- Shipping Addresses
-- Blog Posts
-
-### Run the Server
-```bash
-python manage.py runserver
-```
-
-## Accessing the Application
-- Frontend: http://localhost:5173
+3. The application will be available at:
+- Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
-- Admin Panel: http://localhost:8000/admin
+- Admin Interface: http://localhost:8000/admin
+- Database: localhost:5432
+
+### Managing Docker Services
+
+1. Stop all services:
+```bash
+docker-compose down
+```
+
+2. Stop services and remove volumes (including database data):
+```bash
+docker-compose down -v
+```
+
+3. Remove all Docker images:
+```bash
+# Remove all images used by the services
+docker-compose down --rmi all
+
+# Remove all images (including unused ones)
+docker system prune -a
+```
+
+4. View logs:
+```bash
+# View logs for all services
+docker-compose logs
+
+# View logs for specific service
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs db
+```
+
+5. Rebuild a specific service:
+```bash
+docker-compose up --build backend
+```
 
 
-## Important Notes
-1. Replace all `your_*` placeholders with your actual keys, secrets, and URLs.
-2. Ensure `.env` files are **excluded from version control** by adding them to `.gitignore`.
-3. Use different values for development and production environments as needed.
+### Important Notes
 
+1. The `.env` file is required for all services to function properly. Make sure all environment variables are set correctly.
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+2. The backend service depends on the database being healthy before starting. This is handled automatically by Docker Compose.
+
+3. Static and media files are persisted in Docker volumes. If you need to reset these, use:
+```bash
+docker-compose down -v
+```
+
+4. For development, changes to the code will be reflected automatically due to volume mounts.
+
+5. The database data persists between restarts unless you explicitly remove the volume.
