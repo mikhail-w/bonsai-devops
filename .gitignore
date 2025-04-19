@@ -32,10 +32,16 @@ venv/
 
 # Environment variables
 .env
+.env.production
 .env.*
+!.env.example
 
-# Docker
-.dockerignore
+
+# Kubernetes
+k8s/*secret*.yaml
+k8s/*secret*.yml
+k8s/*-secret.yaml
+k8s/*-secret.yml
 
 # Misc
 .DS_Store
