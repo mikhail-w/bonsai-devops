@@ -27,18 +27,32 @@ const useQuote = () => {
     setIsLoading(true);
     setError(null);
 
-    // console.log('Fetching a new quote...');
+    console.log('Fetching a new quote...');
 
     try {
+      // Timing the request to debug potential timeout issues
+      const startTime = Date.now();
       const data = await quoteService.getRandomQuote();
-      // console.log('Quote fetched successfully:', data);
+      const endTime = Date.now();
+      console.log(`Quote fetched successfully in ${endTime - startTime}ms:`, data);
+      
+      // Additional validation to ensure we have a valid quote
+      if (!data || !data.content) {
+        console.error('Received invalid quote data:', data);
+        throw new Error('Invalid quote data structure');
+      }
+      
       setQuote(data);
     } catch (err) {
-      // console.error('Error fetching quote:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch quote');
+      console.error('Error fetching quote:', err);
+      
+      // ALWAYS use fallback quote if API fails for any reason
+      console.log('Using local fallback quote');
+      const fallbackQuote = quoteService.getFallbackQuote();
+      setQuote(fallbackQuote);
     } finally {
       setIsLoading(false);
-      // console.log('Fetch process complete.');
+      console.log('Fetch process complete.');
     }
   }, []);
 
@@ -62,7 +76,12 @@ const useQuote = () => {
 const QuoteContent = ({ quote }) => {
   const textColor = useColorModeValue('gray.700', 'gray.200');
   const authorColor = useColorModeValue('gray.600', 'gray.400');
-  // console.log('Current state:', { isLoading, error, quote });
+
+  if (!quote || !quote.content) {
+    return (
+      <Text color="red.500">No quote available. Please try again.</Text>
+    );
+  }
 
   return (
     <VStack spacing={4} align="center">
@@ -77,7 +96,7 @@ const QuoteContent = ({ quote }) => {
         "{quote.content}"
       </Text>
       <Text fontSize="md" fontWeight="medium" color={authorColor}>
-        — {quote.author}
+        — {quote.author || 'Unknown'}
       </Text>
     </VStack>
   );
@@ -157,7 +176,9 @@ const ZenQuotes = () => {
                 <ErrorMessage message={error} onRetry={refetch} />
               ) : quote ? (
                 <QuoteContent quote={quote} />
-              ) : null}
+              ) : (
+                <Text>No quote available. Please click "New Quote".</Text>
+              )}
             </Box>
 
             {!error && (

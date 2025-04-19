@@ -5,6 +5,7 @@ import { Box, Image } from '@chakra-ui/react';
 const IS_DEVELOPMENT = import.meta.env.VITE_ENV === 'development';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const S3_BASE_URL = import.meta.env.VITE_S3_PATH;
+const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || `${API_BASE_URL}/media/`;
 
 const S3ImageHandler = ({
   imagePath,
@@ -20,19 +21,19 @@ const S3ImageHandler = ({
   const getImageUrl = path => {
     if (!path) return null;
 
+    // If it's already a full URL, return it as is
+    if (path.startsWith('http')) {
+      return path;
+    }
+
     // Clean the path by removing any prefixes and extra slashes
     const cleanPath = path
       .replace(/^\/+|\/+$/g, '') // Remove leading/trailing slashes
       .replace(/^media\/?/, '') // Remove 'media/' prefix if exists
       .replace(/\/+/g, '/'); // Replace multiple slashes with single
 
-    // In development, use local Django media server
-    if (IS_DEVELOPMENT) {
-      return `${API_BASE_URL}/media/${cleanPath}`;
-    }
-
-    // In production, use S3/CloudFront
-    return `${S3_BASE_URL}/media/${cleanPath}`;
+    // Use the MEDIA_URL environment variable
+    return `${MEDIA_URL.replace(/\/+$/, '')}/${cleanPath}`;
   };
 
   const handleError = () => {

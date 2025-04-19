@@ -46,11 +46,8 @@ function CartPage() {
   // Create a function to get the proper image URL for a cart item
   const getItemImageUrl = itemImage => {
     return itemImage
-      ? cleanMediaPath(itemImage, import.meta.env.VITE_API_BASE_URL)
-      : cleanMediaPath(
-          'default/placeholder.jpg',
-          import.meta.env.VITE_API_BASE_URL
-        );
+      ? cleanMediaPath(itemImage)
+      : cleanMediaPath('default/placeholder.jpg');
   };
 
   useEffect(() => {

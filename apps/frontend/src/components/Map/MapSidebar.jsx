@@ -101,6 +101,11 @@ const MapSidebar = ({
                     objectFit="cover"
                     src={location.photo || DefaultImg}
                     alt={`${location.name} thumbnail`}
+                    onError={(e) => {
+                      e.target.src = DefaultImg;
+                      // Prevent infinite error loop
+                      e.target.onerror = null;
+                    }}
                   />
                 </Box>
                 <VStack align="start" spacing={1} flex="1" ml={4}>

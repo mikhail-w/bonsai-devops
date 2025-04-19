@@ -32,14 +32,24 @@ import {
   PRODUCT_ESSENTIALS_FAIL,
 } from '../constants/productConstants';
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Define API URLs from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
+
+// Create axios instance with consistent configuration
+const axiosClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const listProducts =
   (keyword = '') =>
   async dispatch => {
     try {
       dispatch({ type: PRODUCT_LIST_REQUEST });
-      const { data } = await axios.get(`${API_URL}products${keyword}`);
+      const { data } = await axiosClient.get(`/products${keyword}`);
 
       dispatch({
         type: PRODUCT_LIST_SUCCESS,
@@ -60,7 +70,7 @@ export const listTopProducts = () => async dispatch => {
   try {
     dispatch({ type: PRODUCT_TOP_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}products/top/`);
+    const { data } = await axiosClient.get(`/products/top/`);
 
     dispatch({
       type: PRODUCT_TOP_SUCCESS,
@@ -81,7 +91,7 @@ export const listPlanterProducts = () => async dispatch => {
   try {
     dispatch({ type: PRODUCT_PLANTER_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}products/planter/`);
+    const { data } = await axiosClient.get(`/products/planter/`);
 
     dispatch({
       type: PRODUCT_PLANTER_SUCCESS,
@@ -102,7 +112,7 @@ export const listPlantProducts = () => async dispatch => {
   try {
     dispatch({ type: PRODUCT_PLANT_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}products/plants/`);
+    const { data } = await axiosClient.get(`/products/plants/`);
 
     dispatch({
       type: PRODUCT_PLANT_SUCCESS,
@@ -123,7 +133,7 @@ export const listEssentialProducts = () => async dispatch => {
   try {
     dispatch({ type: PRODUCT_ESSENTIALS_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}products/essentials/`);
+    const { data } = await axiosClient.get(`/products/essentials/`);
 
     dispatch({
       type: PRODUCT_ESSENTIALS_SUCCESS,
@@ -144,7 +154,7 @@ export const listProductDetails = id => async dispatch => {
   try {
     dispatch({ type: PRODUCT_DETAILS_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}products/${id}`);
+    const { data } = await axiosClient.get(`/products/${id}`);
 
     dispatch({
       type: PRODUCT_DETAILS_SUCCESS,
@@ -173,15 +183,11 @@ export const deleteProduct = id => async (dispatch, getState) => {
 
     const config = {
       headers: {
-        'Content-type': 'application/json',
         Authorization: `Bearer ${userInfo.token}`,
       },
     };
 
-    const { data } = await axios.delete(
-      `${API_URL}products/delete/${id}/`,
-      config
-    );
+    await axiosClient.delete(`/products/delete/${id}/`, config);
 
     dispatch({
       type: PRODUCT_DELETE_SUCCESS,
@@ -209,12 +215,11 @@ export const createProduct = () => async (dispatch, getState) => {
 
     const config = {
       headers: {
-        'Content-type': 'application/json',
         Authorization: `Bearer ${userInfo.token}`,
       },
     };
 
-    const { data } = await axios.post(`${API_URL}products/create/`, {}, config);
+    const { data } = await axiosClient.post(`/products/create/`, {}, config);
     dispatch({
       type: PRODUCT_CREATE_SUCCESS,
       payload: data,
@@ -247,8 +252,8 @@ export const updateProduct = product => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.put(
-      `${API_URL}products/update/${product._id}/`,
+    const { data } = await axiosClient.put(
+      `/products/update/${product._id}/`,
       product,
       config
     );
@@ -290,8 +295,8 @@ export const createProductReview =
         },
       };
 
-      const { data } = await axios.post(
-        `${API_URL}products/${productId}/reviews/`,
+      const { data } = await axiosClient.post(
+        `/products/${productId}/reviews/`,
         review,
         config
       );

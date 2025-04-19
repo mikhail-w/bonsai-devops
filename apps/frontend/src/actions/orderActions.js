@@ -22,8 +22,48 @@ import {
 
 import { CART_CLEAR_ITEMS } from '../constants/cartConstants';
 
-// Define the API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL;
+// Define API URLs from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
+
+/**
+ * Extract a relative media path from an absolute URL or path
+ * Used in order creation to store just the relative path
+ * @param {string} fullPath - The full image path or URL
+ * @returns {string} - Just the media path portion
+ */
+const extractMediaPath = (fullPath) => {
+  if (!fullPath) return '';
+  
+  try {
+    // If it's a full URL, parse it
+    if (fullPath.startsWith('http')) {
+      const url = new URL(fullPath);
+      let path = url.pathname;
+      
+      // Remove any /media/ prefix and clean up
+      return path
+        .replace(/^\/media\/|^media\//g, '')
+        .replace(/\/media\/media\//g, '/media/')
+        .replace(/^\/+|\/+$/g, '')
+        .replace(/\/+/g, '/');
+    } else {
+      // For relative paths, just clean them up
+      return fullPath
+        .replace(/^\/media\/|^media\//g, '')
+        .replace(/\/media\/media\//g, '/media/')
+        .replace(/^\/+|\/+$/g, '')
+        .replace(/\/+/g, '/');
+    }
+  } catch (e) {
+    // Fallback: try to clean the path without URL parsing
+    return fullPath
+      .replace(/^\/media\/|^media\//g, '')
+      .replace(/\/media\/media\//g, '/media/')
+      .replace(/^\/+|\/+$/g, '')
+      .replace(/\/+/g, '/');
+  }
+};
 
 // Main order creation action
 export const createOrder = order => async (dispatch, getState) => {
@@ -44,41 +84,8 @@ export const createOrder = order => async (dispatch, getState) => {
       taxPrice: Number(order.taxPrice),
       totalPrice: Number(order.totalPrice),
       orderItems: order.orderItems.map(item => {
-        // Extract just the relative path portion of the image URL
-        let relativePath;
-        try {
-          const imageUrl = new URL(item.image, window.location.origin);
-          let pathname = imageUrl.pathname;
-
-          // Remove duplicate media/ if it exists
-          pathname = pathname.replace(/^\/media\/media\//, '/media/');
-
-          // Get the final path without leading /media/
-          relativePath = pathname.replace(/^\/media\//, '');
-
-          // console.log('ORDER ACTIONS Image Path Processing:', {
-          //   original: item.image,
-          //   pathname,
-          //   relativePath,
-          // });
-        } catch (e) {
-          // If URL parsing fails, handle as relative path
-          relativePath = item.image
-            .replace(/^media\/media\//, '')
-            .replace(/^media\//, '');
-          // console.log('ORDER ACTIONS Fallback Path Processing:', {
-          //   original: item.image,
-          //   relativePath,
-          // });
-        }
-
-        // console.log('Processing order item:', {
-        //   name: item.name,
-        //   image: relativePath,
-        //   price: Number(item.price),
-        //   qty: Number(item.qty),
-        //   product: item.product,
-        // });
+        // Use the extractMediaPath utility to get just the relative path
+        const relativePath = extractMediaPath(item.image);
 
         return {
           product: item.product,
@@ -97,22 +104,8 @@ export const createOrder = order => async (dispatch, getState) => {
       },
     };
 
-    // console.log('Sending complete order data:', {
-    //   orderItems: orderData.orderItems.map(item => ({
-    //     ...item,
-    //     price: typeof item.price,
-    //     qty: typeof item.qty,
-    //   })),
-    //   pricing: {
-    //     items: typeof orderData.itemsPrice,
-    //     shipping: typeof orderData.shippingPrice,
-    //     tax: typeof orderData.taxPrice,
-    //     total: typeof orderData.totalPrice,
-    //   },
-    // });
-
     const { data } = await axios.post(
-      `${API_URL}orders/add/`,
+      `${API_URL}/orders/add/`,
       orderData,
       config
     );
@@ -131,8 +124,6 @@ export const createOrder = order => async (dispatch, getState) => {
     console.error('Order creation failed:', {
       error: error.response?.data || error.message,
       statusCode: error.response?.status,
-      orderData: order,
-      requestConfig: config,
     });
 
     dispatch({
@@ -160,7 +151,7 @@ export const getOrderDetails = id => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.get(`${API_URL}orders/${id}/`, config);
+    const { data } = await axios.get(`${API_URL}/orders/${id}/`, config);
 
     dispatch({
       type: ORDER_DETAILS_SUCCESS,
@@ -196,7 +187,7 @@ export const payOrder = (id, paymentResult) => async (dispatch, getState) => {
     };
 
     const { data } = await axios.put(
-      `${API_URL}orders/${id}/pay/`,
+      `${API_URL}/orders/${id}/pay/`,
       paymentResult,
       config
     );
@@ -235,7 +226,7 @@ export const deliverOrder = order => async (dispatch, getState) => {
     };
 
     const { data } = await axios.put(
-      `${API_URL}orders/${order._id}/deliver/`,
+      `${API_URL}/orders/${order._id}/deliver/`,
       {},
       config
     );
@@ -273,7 +264,7 @@ export const listMyOrders = () => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.get(`${API_URL}orders/myorders/`, config);
+    const { data } = await axios.get(`${API_URL}/orders/myorders/`, config);
 
     dispatch({
       type: ORDER_LIST_MY_SUCCESS,
@@ -308,7 +299,7 @@ export const listOrders = () => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.get(`${API_URL}orders/`, config);
+    const { data } = await axios.get(`${API_URL}/orders/`, config);
 
     dispatch({
       type: ORDER_LIST_SUCCESS,

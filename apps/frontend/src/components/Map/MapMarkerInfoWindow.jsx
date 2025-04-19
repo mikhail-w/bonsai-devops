@@ -11,6 +11,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { MapPin, Navigation2, Star } from 'lucide-react';
+import DefaultImg from '../../assets/images/bonsai-tree-logo.png';
 
 const MapMarkerInfoWindow = ({
   selectedMarker,
@@ -99,13 +100,31 @@ const MapMarkerInfoWindow = ({
       >
         <VStack align="stretch" spacing={0}>
           <Image
-            src={selectedMarker.photo}
+            src={selectedMarker.photo || DefaultImg}
             alt={`${selectedMarker.name} thumbnail`}
             height="auto"
             maxHeight="180px"
             objectFit="cover"
             width="100%"
             maxWidth="100%"
+            loading="lazy"
+            onError={(e) => {
+              console.warn(`Image load failed for ${selectedMarker.name}, using default`);
+              e.target.src = DefaultImg;
+              e.target.onerror = null; // Prevent infinite error loop
+            }}
+            fallback={
+              <Box 
+                height="180px" 
+                width="100%" 
+                bg="gray.200" 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+              >
+                <Text color="gray.500" fontSize="sm">Image not available</Text>
+              </Box>
+            }
           />
 
           <Box backgroundColor={bgColor} p={4}>

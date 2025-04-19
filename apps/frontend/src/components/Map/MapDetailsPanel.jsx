@@ -43,13 +43,28 @@ const MapDetailsPanel = ({ selectedLocation, closePanel, isPanelOpen }) => {
               <Image
                 src={selectedLocation.photo || DefaultImg}
                 alt={`${selectedLocation.name} thumbnail`}
-                onError={e => {
+                onError={(e) => {
+                  console.warn(`Image load failed for ${selectedLocation.name}, using default`);
                   e.target.src = DefaultImg;
+                  e.target.onerror = null; // Prevent infinite error loop
                 }}
+                fallback={
+                  <Box 
+                    width="100%" 
+                    height="300px" 
+                    bg="gray.200"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Text color="gray.500" fontSize="sm">Image not available</Text>
+                  </Box>
+                }
                 borderRadius="md"
                 width="100%"
                 height="100%"
                 objectFit="cover"
+                loading="lazy"
               />
             </Box>
             <Text fontFamily="rale" fontWeight="bold" fontSize="lg">

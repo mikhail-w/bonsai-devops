@@ -4,6 +4,7 @@ import {
   listProductDetails,
   createProductReview,
 } from '../../../../actions/productActions';
+import { addToCart } from '../../../../actions/cartActions';
 import { PRODUCT_CREATE_REVIEW_RESET } from '../../../../constants/productConstants';
 
 const useProductPageLogic = id => {
@@ -26,7 +27,8 @@ const useProductPageLogic = id => {
   }, [dispatch, id, productReviewCreate.success]);
 
   const addToCartHandler = navigate => {
-    navigate(`/cart/${id}?qty=${qty}`);
+    dispatch(addToCart(id, qty));
+    navigate('/cart');
   };
 
   const submitHandler = e => {

@@ -123,7 +123,6 @@ const Footer = ({ excludePaths = ['/login', '/register', '/profile'] }) => {
                 src={logo}
                 alt="Bonsai Logo"
                 boxSize="50px"
-                fallbackSrc="/placeholder.png"
               />
               <Text
                 fontFamily="lato"

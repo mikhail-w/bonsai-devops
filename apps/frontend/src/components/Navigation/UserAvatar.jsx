@@ -10,11 +10,8 @@ const UserAvatar = ({ userInfo }) => {
       <Avatar
         src={
           userInfo.avatar
-            ? cleanMediaPath(userInfo.avatar, import.meta.env.VITE_API_BASE_URL)
-            : cleanMediaPath(
-                'default/avatar.jpg',
-                import.meta.env.VITE_API_BASE_URL
-              )
+            ? cleanMediaPath(userInfo.avatar)
+            : cleanMediaPath('default/avatar.jpg')
         }
         size="md"
         position="absolute"

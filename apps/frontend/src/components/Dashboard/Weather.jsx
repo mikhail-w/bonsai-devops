@@ -165,7 +165,10 @@ const ErrorMessage = ({ message }) => (
 );
 
 function Weather() {
-  const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
+  const API_KEY = window._env_?.VITE_WEATHER_API_KEY || import.meta.env.VITE_WEATHER_API_KEY;
+  
+  console.log('Weather API Key:', API_KEY); // Debug line
+  
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState(null);
   const [error, setError] = useState(null);
@@ -174,13 +177,17 @@ function Weather() {
   const fetchWeatherByCity = async () => {
     try {
       setIsLoading(true);
+      // Check if input is a zipcode (5 digits)
+      const isZipCode = /^\d{5}$/.test(city);
+      const queryParam = isZipCode ? `zip=${city},us` : `q=${city}`;
+      
       const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=imperial`
+        `https://api.openweathermap.org/data/2.5/weather?${queryParam}&appid=${API_KEY}&units=imperial`
       );
       setWeather(response.data);
       setError(null);
     } catch (err) {
-      setError('City not found. Please try again.');
+      setError('Location not found. Please try again.');
       setWeather(null);
     } finally {
       setIsLoading(false);
@@ -258,7 +265,7 @@ function Weather() {
               <Icon as={FaSearch} color="gray.400" />
             </InputLeftElement>
             <Input
-              placeholder="Enter city name"
+              placeholder="Enter city name or zipcode"
               value={city}
               onChange={e => setCity(e.target.value)}
               borderRadius="full"

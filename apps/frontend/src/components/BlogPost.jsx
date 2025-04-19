@@ -44,11 +44,8 @@ function BlogPost({ post, commentsCount }) {
           // src={post.image}
           src={
             post.image
-              ? cleanMediaPath(post.image, import.meta.env.VITE_API_BASE_URL)
-              : cleanMediaPath(
-                  'default/paceholder.jpg',
-                  import.meta.env.VITE_API_BASE_URL
-                )
+              ? cleanMediaPath(post.image)
+              : cleanMediaPath('default/placeholder.jpg')
           }
           alt={post.content}
         />

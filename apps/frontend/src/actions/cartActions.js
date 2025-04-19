@@ -7,23 +7,37 @@ import {
   CART_CLEAR_ITEMS,
 } from '../constants/cartConstants';
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Define API URLs from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
+
+// Create axios instance with consistent configuration
+const axiosClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const addToCart = (id, qty) => async (dispatch, getState) => {
-  const { data } = await axios.get(`${API_URL}products/${id}`);
+  try {
+    const { data } = await axiosClient.get(`/products/${id}/`);
 
-  dispatch({
-    type: CART_ADD_ITEM,
-    payload: {
-      product: data._id,
-      name: data.name,
-      image: data.image,
-      price: data.price,
-      countInStock: data.countInStock,
-      qty,
-    },
-  });
-  localStorage.setItem('cartItems', JSON.stringify(getState().cart.cartItems));
+    dispatch({
+      type: CART_ADD_ITEM,
+      payload: {
+        product: data._id,
+        name: data.name,
+        image: data.image,
+        price: data.price,
+        countInStock: data.countInStock,
+        qty,
+      },
+    });
+    localStorage.setItem('cartItems', JSON.stringify(getState().cart.cartItems));
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+  }
 };
 
 export const removeFromCart = id => (dispatch, getState) => {

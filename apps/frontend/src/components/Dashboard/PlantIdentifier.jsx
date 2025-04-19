@@ -85,10 +85,12 @@ const PlantIdentifier = () => {
     };
 
     try {
-      const apiKey = import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
+      const apiKey = window._env_?.VITE_GOOGLE_CLOUD_VISION_API_KEY || import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
       if (!apiKey) {
         throw new Error('API key is not configured');
       }
+
+      console.log('Using Vision API Key:', apiKey); // Debug line
 
       const response = await fetch(
         `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,

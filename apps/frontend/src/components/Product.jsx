@@ -12,6 +12,7 @@ import { FiShoppingCart } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../actions/cartActions';
+import { cleanMediaPath, debugImagePath } from '../utils/urlUtils';
 import S3ImageHandler from './S3ImageHandler';
 import Rating from './Rating';
 
@@ -32,13 +33,6 @@ const Product = ({ product }) => {
         isClosable: true,
       });
     }
-  };
-
-  // Ensure image path is properly formatted
-  const getImagePath = image => {
-    if (!image) return '';
-    // Remove any duplicate media prefixes and ensure clean path
-    return image.replace(/^media\/|\/media\//g, '');
   };
 
   return (
@@ -62,7 +56,7 @@ const Product = ({ product }) => {
       >
         <Link to={`/product/${product._id}`}>
           <S3ImageHandler
-            imagePath={getImagePath(product.image)}
+            imagePath={cleanMediaPath(product.image)}
             alt={`Picture of ${product.name}`}
             roundedTop="lg"
             objectFit="cover"

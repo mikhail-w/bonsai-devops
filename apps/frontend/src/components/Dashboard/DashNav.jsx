@@ -126,7 +126,7 @@ const DashNav = ({ onOpen }) => {
                         import.meta.env.VITE_API_BASE_URL
                       )
                     : cleanMediaPath(
-                        'media/avatars/default.jpg',
+                        'media/avatars/avatar.jpg',
                         import.meta.env.VITE_API_BASE_URL
                       )
                 }

@@ -141,12 +141,30 @@ const MapContainer = ({
     isLoaded,
   ]);
 
+  // In the processPlace function in MapContainer.jsx
   const processPlace = useCallback(place => {
     if (!place?.geometry?.location) {
       return null;
     }
 
     try {
+      // Initialize with the default image
+      let photoUrl = DefaultImg;
+      
+      // Safely try to get the photo URL with rate limiting consideration
+      if (place.photos && place.photos.length > 0) {
+        try {
+          // Add maxWidth parameter to reduce image size and help with rate limiting
+          photoUrl = place.photos[0].getUrl({
+            maxWidth: 200, // Reduced from 400 to help with rate limiting
+            maxHeight: 200 // Reduced from 400 to help with rate limiting
+          });
+        } catch (photoError) {
+          console.warn('Photo loading error for place:', place.name, photoError);
+          // Fall back to default image silently
+        }
+      }
+
       return {
         id: place.place_id,
         name: place.name,
@@ -155,18 +173,20 @@ const MapContainer = ({
           lng: place.geometry.location.lng(),
         },
         vicinity: place.vicinity,
-        photos: place.photos,
         rating: place.rating || 0,
         reviewCount: place.user_ratings_total || 0,
         isOpen: place.opening_hours?.isOpen() || false,
         types: place.types || [],
-        photo: place.photos?.[0]?.getUrl({ maxWidth: 200 }) || DefaultImg,
+        photo: photoUrl,
+        photoFailed: false
       };
     } catch (error) {
       console.error('Error processing place:', error);
       return null;
     }
   }, []);
+
+// Similar update in the searchPlaces function where you process results
 
   // Geolocation setup
   useEffect(() => {
@@ -256,21 +276,36 @@ const MapContainer = ({
         return;
       }
 
-      const processedResults = results.map(place => ({
-        id: place.place_id,
-        name: place.name,
-        address: place.vicinity,
-        position: {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-        },
-        vicinity: place.vicinity,
-        rating: place.rating || 0,
-        reviewCount: place.user_ratings_total || 0,
-        isOpen: place.opening_hours?.isOpen() || false,
-        types: place.types || [],
-        photo: place.photos?.[0]?.getUrl({ maxWidth: 200 }) || DefaultImg,
-      }));
+      const processedResults = results.map(place => {
+        let photoUrl = DefaultImg;
+        if (place.photos && place.photos.length > 0) {
+          try {
+            photoUrl = place.photos[0].getUrl({
+              maxWidth: 400,
+              maxHeight: 400
+            });
+          } catch (photoError) {
+            console.error('Error getting photo URL:', photoError);
+            photoUrl = DefaultImg;
+          }
+        }
+
+        return {
+          id: place.place_id,
+          name: place.name,
+          address: place.vicinity,
+          position: {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+          },
+          vicinity: place.vicinity,
+          rating: place.rating || 0,
+          reviewCount: place.user_ratings_total || 0,
+          isOpen: place.opening_hours?.isOpen() || false,
+          types: place.types || [],
+          photo: photoUrl,
+        };
+      });
 
       setMarkers(processedResults);
       setLocationList(processedResults);

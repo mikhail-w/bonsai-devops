@@ -27,7 +27,17 @@ import {
   BLOG_LIST_FAIL,
 } from '../constants/blogConstants';
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Define API URLs from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
+
+// Create axios instance with consistent configuration
+const axiosClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Get all blog posts
 export const listBlogPosts = () => async (dispatch, getState) => {
@@ -40,11 +50,11 @@ export const listBlogPosts = () => async (dispatch, getState) => {
 
     const config = {
       headers: {
-        Authorization: `Bearer ${userInfo.token}`, // Add the token to the request
+        Authorization: `Bearer ${userInfo.token}`,
       },
     };
 
-    const { data } = await axios.get(`${API_URL}blog/`, config);
+    const { data } = await axiosClient.get(`/blog/`, config);
 
     dispatch({
       type: BLOG_LIST_SUCCESS,
@@ -66,7 +76,7 @@ export const getBlogPostDetails = id => async dispatch => {
   try {
     dispatch({ type: BLOG_POST_DETAILS_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}blog/${id}/`);
+    const { data } = await axiosClient.get(`/blog/${id}/`);
     dispatch({
       type: BLOG_POST_DETAILS_SUCCESS,
       payload: data,
@@ -98,8 +108,8 @@ export const createBlogPost = formData => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.post(
-      `${API_URL}blog/create/`,
+    const { data } = await axiosClient.post(
+      `/blog/create/`,
       formData,
       config
     );
@@ -134,7 +144,7 @@ export const deleteBlogPost = id => async (dispatch, getState) => {
       },
     };
 
-    await axios.delete(`${API_URL}blog/${id}/delete/`, config);
+    await axiosClient.delete(`/blog/${id}/delete/`, config);
 
     dispatch({
       type: BLOG_POST_DELETE_SUCCESS,
@@ -165,7 +175,7 @@ export const likeUnlikeBlogPost = id => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.post(`${API_URL}blog/${id}/like/`, {}, config);
+    const { data } = await axiosClient.post(`/blog/${id}/like/`, {}, config);
 
     dispatch({
       type: BLOG_POST_LIKE_UNLIKE_SUCCESS,
@@ -175,7 +185,7 @@ export const likeUnlikeBlogPost = id => async (dispatch, getState) => {
     // Dispatch an action to update the blog list with the updated post
     dispatch({
       type: BLOG_POST_UPDATE_IN_LIST,
-      payload: data.post, // Updated post
+      payload: data.post,
     });
   } catch (error) {
     dispatch({
@@ -200,13 +210,12 @@ export const createComment =
 
       const config = {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${userInfo.token}`,
         },
       };
 
-      const { data } = await axios.post(
-        `${API_URL}blog/${postId}/comment/`,
+      const { data } = await axiosClient.post(
+        `/blog/${postId}/comment/`,
         { content },
         config
       );
@@ -231,7 +240,7 @@ export const getComments = postId => async dispatch => {
   try {
     dispatch({ type: BLOG_GET_COMMENT_REQUEST });
 
-    const { data } = await axios.get(`${API_URL}blog/${postId}/comments/`);
+    const { data } = await axiosClient.get(`/blog/${postId}/comments/`);
 
     dispatch({
       type: BLOG_GET_COMMENT_SUCCESS,
@@ -263,7 +272,7 @@ export const listMyBlogPosts = () => async (dispatch, getState) => {
       },
     };
 
-    const { data } = await axios.get(`${API_URL}blog/myposts/`, config);
+    const { data } = await axiosClient.get(`/blog/myposts/`, config);
 
     dispatch({
       type: BLOG_LIST_MY_SUCCESS,
