@@ -9,7 +9,7 @@ class UserProfile(models.Model):
         upload_to="avatars/",  # Store uploaded files in 'media/avatars/'
         null=True,
         blank=True,
-        default="default/avatar.jpg",
+        default="default/avatar.jpg",  # Default avatar in media/default/avatar.jpg
     )
 
     def save(self, *args, **kwargs):

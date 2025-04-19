@@ -21,14 +21,18 @@ from storages.backends.s3boto3 import S3Boto3Storage
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+# Environment configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+DOMAIN_NAME = os.getenv("DOMAIN_NAME", "localhost")
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "your-default-secret-key")
+SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("true", "1")
+DEBUG = ENVIRONMENT == "development"
 
-# ALLOWED_HOSTS from environment or default to localhost
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+# ALLOWED_HOSTS configuration
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 # OpenAI API Key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -43,6 +47,7 @@ X_FRAME_OPTIONS = os.getenv("X_FRAME_OPTIONS", "DENY")
 
 # Print initial configuration
 print("\n=== Django Configuration ===")
+print(f"ENVIRONMENT: {ENVIRONMENT}")
 print(f"DEBUG: {DEBUG}")
 print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
@@ -101,16 +106,28 @@ TEMPLATES = [
 WSGI_APPLICATION = "backend.wsgi.application"
 
 # Database configuration
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+if ENVIRONMENT == "production":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("AWS_RDS_DB_NAME"),
+            "USER": os.getenv("AWS_RDS_USER"),
+            "PASSWORD": os.getenv("AWS_RDS_PASSWORD"),
+            "HOST": os.getenv("AWS_RDS_HOST"),
+            "PORT": os.getenv("AWS_RDS_PORT", "5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME"),
+            "USER": os.getenv("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD"),
+            "HOST": os.getenv("DB_HOST"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -128,29 +145,45 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# S3 Configuration
-AWS_ACCESS_KEY_ID = None
-AWS_SECRET_ACCESS_KEY = None
-AWS_STORAGE_BUCKET_NAME = None
-AWS_S3_REGION_NAME = None
-AWS_S3_CUSTOM_DOMAIN = None
-AWS_QUERYSTRING_AUTH = False
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-
 # Storage configuration
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+if ENVIRONMENT == "production":
+    # AWS S3 Configuration
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
+    AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN")
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
 
-# Local URLs
-STATIC_URL = "/static/"
-MEDIA_URL = "/media/"
+    # Use S3 for static and media files in production
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        },
+    }
+
+    # Static and Media URLs for S3
+    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+else:
+    # Local storage configuration
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+    # Local URLs
+    STATIC_URL = "/static/"
+    MEDIA_URL = "/media/"
 
 # Static and Media root directories
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -160,6 +193,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 print("\n=== URL Configuration ===")
 print(f"MEDIA_URL: {MEDIA_URL}")
 print(f"STATIC_URL: {STATIC_URL}")
+print(f"MEDIA_ROOT: {MEDIA_ROOT}")
 
 
 # REST framework settings
@@ -180,22 +214,41 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-# CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = DEBUG
+CORS_ALLOW_CREDENTIALS = True
 
+# Add CORS_ALLOWED_ORIGINS
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
-# Uncomment and configure if you want to restrict allowed origins
-CORS_ALLOWED_ORIGINS = [
-    "https://mwbonsai.com",
-    "https://www.mwbonsai.com",
-    "https://d2v41dj0jm6bl1.cloudfront.net",
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-    "http://mikhail-bonsai.s3-website-us-east-1.amazonaws.com",
-    "http://mwbonsai.s3-website-us-east-1.amazonaws.com",
+# Add CSRF trusted origins
+CSRF_TRUSTED_ORIGINS = [
+    f"http://{host}" for host in ALLOWED_HOSTS
+] + [
+    f"https://{host}" for host in ALLOWED_HOSTS
 ]
 
-# Add CORS_ALLOW_CREDENTIALS if you're using cookies/sessions
-CORS_ALLOW_CREDENTIALS = True
+# Add CORS_ALLOW_METHODS
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Add CORS_ALLOW_HEADERS
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Security settings for production
 if not DEBUG:
@@ -206,9 +259,6 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in (
-        "true",
-        "1",
-    )
+    SECURE_SSL_REDIRECT = True
 
 print("\n=== Settings Loaded Successfully ===")
