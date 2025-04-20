@@ -23,6 +23,13 @@ var/
 venv/
 *.egg-info/
 
+# Django
+apps/backend/media/*
+!apps/backend/media/.gitkeep
+apps/backend/staticfiles/*
+!apps/backend/staticfiles/admin/
+!apps/backend/staticfiles/rest_framework/
+
 # Terraform
 .terraform/
 *.tfstate
