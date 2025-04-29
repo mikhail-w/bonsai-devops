@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bonsai-frontend
+  namespace: bonsai
+  labels:
+    app: bonsai-frontend
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bonsai-frontend
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: bonsai-frontend
+        tier: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: bonsai-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          env:
+            - name: VITE_API_BASE_URL
+              value: "http://bonsai-backend:8000"
+            - name: VITE_API_URL
+              value: "http://bonsai-backend:8000/api"
+            - name: VITE_MEDIA_URL
+              value: "http://bonsai-backend:8000/media"
+            - name: VITE_STATIC_URL
+              value: "http://bonsai-backend:8000/static"
+          envFrom:
+            - configMapRef:
+                name: bonsai-config
+            - secretRef:
+                name: bonsai-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 8
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 8
+          resources:
+            limits:
+              cpu: "300m"
+              memory: "384Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"

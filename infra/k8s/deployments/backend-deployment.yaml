@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bonsai-backend
+  namespace: bonsai
+  labels:
+    app: bonsai-backend
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bonsai-backend
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: bonsai-backend
+        tier: backend
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: postgres:13-alpine
+        command: ['sh', '-c', 
+          'until pg_isready -h bonsai-postgres -p 5432 -U postgres; do echo Waiting for database; sleep 2; done;']
+        env:
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: bonsai-secrets
+                key: DB_PASSWORD
+      - name: init-media
+        image: bonsai-backend:latest
+        imagePullPolicy: Never
+        securityContext:
+          runAsUser: 0
+        command: ['sh', '-c', 'mkdir -p /mnt/media && cp -r /app/media/* /mnt/media/ 2>/dev/null || true && chmod -R 777 /mnt/media/']
+        volumeMounts:
+          - name: media-volume
+            mountPath: /mnt/media
+      containers:
+        - name: backend
+          image: bonsai-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          command: ["/app/entrypoint.sh"]
+          args: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+          envFrom:
+            - configMapRef:
+                name: bonsai-config
+            - secretRef:
+                name: bonsai-secrets
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: DJANGO_SETTINGS_MODULE
+              value: "backend.settings"
+            - name: CORS_ALLOWED_ORIGINS
+              value: "http://localhost:8090,http://127.0.0.1:8090,http://localhost:8000,http://127.0.0.1:8000"
+            - name: ALLOWED_HOSTS
+              value: "localhost,127.0.0.1,backend,bonsai-backend,bonsai.local,*.local,*"
+          volumeMounts:
+            - name: media-volume
+              mountPath: /app/media
+            - name: static-volume
+              mountPath: /app/staticfiles
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+      volumes:
+        - name: media-volume
+          persistentVolumeClaim:
+            claimName: media-pvc
+        - name: static-volume
+          persistentVolumeClaim:
+            claimName: static-pvc

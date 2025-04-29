@@ -1,0 +1,69 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bonsai-ingress
+  namespace: bonsai
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  rules:
+    - host: bonsai.local
+      http:
+        paths:
+          - path: /api/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: bonsai-backend
+                port:
+                  number: 8000
+          - path: /media/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: bonsai-backend
+                port:
+                  number: 8000
+          - path: /static/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: bonsai-backend
+                port:
+                  number: 8000
+          - path: /admin/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: bonsai-backend
+                port:
+                  number: 8000
+          - path: /health/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: bonsai-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Exact
+            backend:
+              service:
+                name: bonsai-frontend
+                port:
+                  number: 80
+          - path: /(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: bonsai-frontend
+                port:
+                  number: 80
