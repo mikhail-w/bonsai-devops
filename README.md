@@ -144,7 +144,7 @@ docker-compose down -v
 docker-compose down --rmi all
 
 # Remove all images (including unused ones)
-docker system prune -a
+docker image prune -a
 ```
 
 4. View logs:
