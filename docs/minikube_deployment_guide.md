@@ -31,10 +31,6 @@ This is particularly useful for:
    - Ability to test complex Kubernetes features locally
    - Safe environment for experimenting with new configurations
 
-4. **Team Collaboration**
-   - Consistent development environment across team members
-   - Easy sharing of configurations and troubleshooting steps
-   - Simplified onboarding for new team members
 
 ## 📋 Prerequisites
 
@@ -167,7 +163,7 @@ kubectl apply -f infra/k8s/ingress/ingress.yaml
 
 ```
 
-#### ✅ Step 7: Map bonsai.local in /etc/hosts
+#### Map bonsai.local in /etc/hosts
 
 Get Minikube IP:
 
@@ -279,23 +275,7 @@ The current configuration uses the following ports:
 > **Important**: The backend consistently uses port 8000. Make sure all
 > configurations reference this port for backend services.
 
-### Using the Port-Forward Script
 
-For convenience, you can use the included port-forwarding script:
-
-```bash
-# Make the script executable
-chmod +x kubectl-port-forward.sh
-
-# Run the port-forwarding script
-./kubectl-port-forward.sh
-```
-
-This script will:
-
-- Set up port forwarding for frontend (8090:80) and backend (8000:8000)
-- Update the ConfigMap with proper CORS settings
-- Restart the pods to apply the new configuration
 
 ## 🛠️ Troubleshooting CORS Issues
 
