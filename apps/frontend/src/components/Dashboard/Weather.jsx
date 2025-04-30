@@ -165,7 +165,7 @@ const ErrorMessage = ({ message }) => (
 );
 
 function Weather() {
-  const API_KEY = window._env_?.VITE_WEATHER_API_KEY || import.meta.env.VITE_WEATHER_API_KEY;
+  const API_KEY = window.ENV?.VITE_WEATHER_API_KEY || import.meta.env.VITE_WEATHER_API_KEY;
   
   console.log('Weather API Key:', API_KEY); // Debug line
   

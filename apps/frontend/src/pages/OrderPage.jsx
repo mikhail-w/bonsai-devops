@@ -32,7 +32,7 @@ function OrderPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const orderId = id;
-  const PAYPAL_CLIENT_ID = window._env_?.VITE_PAYPAL_CLIENT_ID || import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
+  const PAYPAL_CLIENT_ID = window.ENV?.VITE_PAYPAL_CLIENT_ID || import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
   const dispatch = useDispatch();
 
   const orderDetails = useSelector(state => state.orderDetails);
@@ -56,7 +56,7 @@ function OrderPage() {
 
   const getImageUrl = imagePath => {
     // Use window._env_ first, then fall back to import.meta.env
-    const baseUrl = window._env_?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const baseUrl = window.ENV?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     
     if (!imagePath) {
       return `${baseUrl}/media/default/placeholder.jpg`;

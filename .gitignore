@@ -52,6 +52,11 @@ k8s/*-secret.yml
 secrets.yaml
 infra/k8s/config/secrets.yaml
 
+# Logs
+*-port-forward.log
+frontend-port-forward.log
+backend-port-forward.log
+
 # Misc
 .DS_Store
 .idea/
