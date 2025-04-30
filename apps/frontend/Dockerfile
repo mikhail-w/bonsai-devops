@@ -29,6 +29,9 @@ RUN rm -rf /etc/nginx/conf.d/*
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
 
+# Create a runtime environment config
+RUN echo "window.ENV = {};" > /usr/share/nginx/html/env-config.js
+
 # Copy nginx 
 COPY nginx.conf /etc/nginx/templates/nginx.conf
 

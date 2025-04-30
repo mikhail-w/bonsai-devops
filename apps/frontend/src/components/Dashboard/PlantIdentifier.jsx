@@ -85,7 +85,7 @@ const PlantIdentifier = () => {
     };
 
     try {
-      const apiKey = window._env_?.VITE_GOOGLE_CLOUD_VISION_API_KEY || import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
+      const apiKey = window.ENV?.VITE_GOOGLE_CLOUD_VISION_API_KEY || import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
       if (!apiKey) {
         throw new Error('API key is not configured');
       }

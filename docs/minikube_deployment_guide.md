@@ -65,18 +65,45 @@ brew install minikube
 
 ## 🚀 Deployment Process
 
+### Note that you will first have to crate a secrets.yaml file 
+## 📄 Secrets File Location
+```bash
+infra/k8s/eks/secrets.yaml
+```
+
+###  Example Structure
+```bash
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bonsai-secrets
+  namespace: bonsai
+type: Opaque
+stringData:
+  DB_PASSWORD: "<your-db-password>"
+  SECRET_KEY: "<your-django-secret-key>"
+  DJANGO_SUPERUSER_USERNAME: "<your-admin-username>"
+  DJANGO_SUPERUSER_EMAIL: "<your-admin-email>"
+  DJANGO_SUPERUSER_PASSWORD: "<your-admin-password>"
+
+
+  VITE_WEATHER_API_KEY: "<your-weather-api-key>"
+  VITE_PAYPAL_CLIENT_ID: "<your-paypal-client-id>"
+  VITE_GOOGLE_MAPS_API_KEY: "<your-google-maps-api-key>"
+  VITE_GOOGLE_CLOUD_VISION_API_KEY: "<your-google-vision-api-key>"
+```
 ### 1. Using the Deployment Script
 
 The project includes an automated deployment script
 (`infra/k8s/minikube-deploy.sh`) that handles the entire deployment process. To
 use it:
 
+
 ```bash
 # Make the script executable
-chmod +x infra/k8s/minikube-deploy.sh
-
-# Run the deployment script
-./infra/k8s/minikube-deploy.sh
+chmod +x infra/k8s/minikube-deploy.sh 
+# Run the deployment script and set up port forwarding automatically
+./infra/k8s/minikube-deploy.sh --background
 ```
 
 The script will:
@@ -87,6 +114,7 @@ The script will:
 - Create Kubernetes namespace
 - Set up ConfigMaps and Secrets
 - Deploy services and applications
+- Enable port forwarding for frontend and backend access
 
 ### 2. Manual Deployment Steps
 
@@ -215,7 +243,20 @@ kubectl get ingress -n bonsai
 
 There are several ways to access your application in Minikube:
 
-1. **Using the Ingress (Recommended)**
+
+1. **Using Port Forwarding**
+
+   ```bash
+   # Forward frontend service
+   kubectl port-forward service/bonsai-frontend 8090:80 -n bonsai
+   # Access at: http://localhost:8090
+
+   # Forward backend service
+   kubectl port-forward service/bonsai-backend 8000:8000 -n bonsai
+   # Access at: http://localhost:8000
+   ```
+
+2. **Using the Ingress 
 
    ```bash
    # First, ensure ingress is enabled
@@ -231,18 +272,6 @@ There are several ways to access your application in Minikube:
    # Now you can access the application at:
    # Frontend: http://bonsai.local
    # Backend API: http://bonsai.local/api
-   ```
-
-2. **Using Port Forwarding**
-
-   ```bash
-   # Forward frontend service
-   kubectl port-forward service/bonsai-frontend 8090:80 -n bonsai
-   # Access at: http://localhost:8090
-
-   # Forward backend service
-   kubectl port-forward service/bonsai-backend 8000:8000 -n bonsai
-   # Access at: http://localhost:8000
    ```
 
 3. **Using Minikube Service**
@@ -332,6 +361,14 @@ Kubernetes, especially with port forwarding. Here's how to resolve them:
 
 | Command                                    | Description                  |
 | ------------------------------------------ | ---------------------------- |
+| `kubectl get pods`                         | Get pods in current namespace|
+| `kubectl get pods -o wide`                 | Get detailed pod information |
+| `kubectl describe pod <pod-name>`          | Describe pod                 |
+| `kubectl get nodes`                        | List cluster nodes           |
+| `kubectl describe node <node-name>`        | Describe node                |
+| `kubectl get services`                     | Get services                 |
+| `kubectl get pv`                           | Get Persistent volumes       |
+| `kubectl get pvc`                          | Get Persistent volume claims |
 | `kubectl logs <pod-name>`                  | View pod logs                |
 | `kubectl describe pod <pod-name>`          | Get detailed pod information |
 | `kubectl exec -it <pod-name> -- /bin/bash` | Access pod shell             |
