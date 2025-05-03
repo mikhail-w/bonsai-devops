@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 # Script directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # Define port numbers
 FRONTEND_PORT=8090
@@ -104,6 +104,11 @@ verify_project_structure() {
   
   if [ ! -d "${PROJECT_ROOT}/infra/k8s" ]; then
     log "ERROR" "Kubernetes configs directory not found: ${PROJECT_ROOT}/infra/k8s"
+    missing_dirs=1
+  fi
+
+  if [ ! -d "${PROJECT_ROOT}/infra/k8s/minikube" ]; then
+    log "ERROR" "Minikube configs directory not found: ${PROJECT_ROOT}/infra/k8s/minikube"
     missing_dirs=1
   fi
   
@@ -228,12 +233,12 @@ EOF
   log "SUCCESS" "ConfigMap created/updated."
   
   # Apply storage resources
-  if [ -d "${PROJECT_ROOT}/infra/k8s/storage" ]; then
+  if [ -d "${PROJECT_ROOT}/infra/k8s/minikube/storage" ]; then
     log "INFO" "Creating Storage resources..."
-    kubectl apply -f "${PROJECT_ROOT}/infra/k8s/storage/"
+    kubectl apply -f "${PROJECT_ROOT}/infra/k8s/minikube/storage/"
     log "SUCCESS" "Storage resources created."
   else
-    log "WARNING" "Storage directory not found: ${PROJECT_ROOT}/infra/k8s/storage"
+    log "WARNING" "Storage directory not found: ${PROJECT_ROOT}/infra/k8s/minikube/storage"
     log "INFO" "Applying individual storage configuration..."
     kubectl apply -f - <<EOF
 apiVersion: v1
@@ -340,12 +345,12 @@ EOF
   log "SUCCESS" "Services created."
   
   # Apply deployments
-  if [ -d "${PROJECT_ROOT}/infra/k8s/deployments" ]; then
+  if [ -d "${PROJECT_ROOT}/infra/k8s/minikube/deployments" ]; then
     log "INFO" "Creating Deployments..."
-    kubectl apply -f "${PROJECT_ROOT}/infra/k8s/deployments/"
+    kubectl apply -f "${PROJECT_ROOT}/infra/k8s/minikube/deployments/"
     log "SUCCESS" "Deployments created."
   else
-    log "ERROR" "Deployments directory not found: ${PROJECT_ROOT}/infra/k8s/deployments"
+    log "ERROR" "Deployments directory not found: ${PROJECT_ROOT}/infra/k8s/minikube/deployments"
     exit 1
   fi
 }
@@ -354,11 +359,11 @@ EOF
 apply_secrets() {
   log "INFO" "Creating/Updating Secrets..."
   
-  if [ -f "${PROJECT_ROOT}/infra/k8s/config/secrets.yaml" ]; then
-    kubectl apply -f "${PROJECT_ROOT}/infra/k8s/config/secrets.yaml"
+  if [ -f "${PROJECT_ROOT}/infra/k8s/minikube/config/secrets.yaml" ]; then
+    kubectl apply -f "${PROJECT_ROOT}/infra/k8s/minikube/config/secrets.yaml"
     log "SUCCESS" "Secrets created/updated."
   else
-    log "ERROR" "Secrets file not found: ${PROJECT_ROOT}/infra/k8s/config/secrets.yaml"
+    log "ERROR" "Secrets file not found: ${PROJECT_ROOT}/infra/k8s/minikube/config/secrets.yaml"
     exit 1
   fi
 }

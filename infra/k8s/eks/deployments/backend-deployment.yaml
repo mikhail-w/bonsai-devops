@@ -1,0 +1,214 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bonsai-backend
+  namespace: bonsai
+  labels:
+    app: bonsai-backend
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bonsai-backend
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: bonsai-backend
+        tier: backend
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: postgres:13-alpine
+        command: ['sh', '-c', 
+          'for i in $(seq 1 30); do pg_isready -h ${DB_HOST} -p 5432 -U postgres && echo "Database is ready" && exit 0; echo "Waiting for database attempt $i"; sleep 5; done; echo "Database connection timeout"; exit 1']
+        env:
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: bonsai-secrets
+                key: DB_PASSWORD
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: bonsai-config
+                key: DB_HOST
+      - name: migrations
+        image: mikhailg215/bonsai-backend:latest
+        command: ['sh', '-c', 'python manage.py migrate || echo "Migration failed - continuing anyway"']
+        envFrom:
+          - configMapRef:
+              name: bonsai-config
+          - secretRef:
+              name: bonsai-secrets
+      - name: load-fixtures
+        image: mikhailg215/bonsai-backend:latest
+        command:
+        - "sh"
+        - "-c"
+        - |
+          # Check if fixtures are already loaded
+          PRODUCT_COUNT=$(python manage.py shell -c "from base.models import Product; print(Product.objects.count())" || echo "0")
+          USER_COUNT=$(python manage.py shell -c "from django.contrib.auth.models import User; print(User.objects.count())" || echo "0")
+          
+          if [ "$PRODUCT_COUNT" = "0" ] || [ "$USER_COUNT" = "0" ] || [ "$USER_COUNT" = "1" ]; then
+            echo "Loading fixtures..."
+            if [ -f "fixtures/users.json" ]; then python manage.py loaddata fixtures/users.json; fi
+            if [ -f "fixtures/products.json" ]; then python manage.py loaddata fixtures/products.json; fi
+            if [ -f "fixtures/reviews.json" ]; then python manage.py loaddata fixtures/reviews.json; fi
+            if [ -f "fixtures/posts.json" ]; then python manage.py loaddata fixtures/posts.json; fi
+            if [ -f "fixtures/comments.json" ]; then python manage.py loaddata fixtures/comments.json; fi
+            echo "Fixtures loaded successfully"
+          else
+            echo "Fixtures already loaded - skipping"
+          fi
+        envFrom:
+          - configMapRef:
+              name: bonsai-config
+          - secretRef:
+              name: bonsai-secrets
+      - name: sync-media-files
+        image: mikhailg215/bonsai-backend:latest
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+        command:
+        - "sh"
+        - "-c"
+        - |
+          echo "Syncing media files from container to PVC..."
+          
+          # Create a temporary directory to work with
+          mkdir -p /tmp/media_source
+          
+          # First, copy all media files from the Docker image to the temporary directory
+          cp -r /app/media/* /tmp/media_source/
+          
+          # Ensure the target directories exist in the PVC
+          mkdir -p /media-pvc/products /media-pvc/default /media-pvc/avatars /media-pvc/posts/images
+          
+          # Set correct permissions on PVC
+          chmod -R 777 /media-pvc
+          
+          # Copy files from temp directory to PVC, ensuring they exist
+          echo "Copying product images..."
+          if [ -d "/tmp/media_source/products" ] && [ "$(ls -A /tmp/media_source/products 2>/dev/null)" ]; then
+            cp -rv /tmp/media_source/products/* /media-pvc/products/ 
+          else
+            echo "No product images found in source directory"
+            touch /media-pvc/products/.gitkeep
+          fi
+          
+          echo "Copying default images..."
+          if [ -d "/tmp/media_source/default" ] && [ "$(ls -A /tmp/media_source/default 2>/dev/null)" ]; then
+            cp -rv /tmp/media_source/default/* /media-pvc/default/
+          else
+            echo "No default images found in source directory"
+            touch /media-pvc/default/.gitkeep
+          fi
+          
+          echo "Copying avatar images..."
+          if [ -d "/tmp/media_source/avatars" ] && [ "$(ls -A /tmp/media_source/avatars 2>/dev/null)" ]; then
+            cp -rv /tmp/media_source/avatars/* /media-pvc/avatars/ 
+          else
+            echo "No avatar images found in source directory"
+            touch /media-pvc/avatars/.gitkeep
+          fi
+          
+          echo "Copying blog post images..."
+          if [ -d "/tmp/media_source/posts/images" ] && [ "$(ls -A /tmp/media_source/posts/images 2>/dev/null)" ]; then
+            cp -rv /tmp/media_source/posts/images/* /media-pvc/posts/images/ 
+          else
+            echo "No blog post images found in source directory"
+            mkdir -p /media-pvc/posts/images
+            touch /media-pvc/posts/images/.gitkeep
+          fi
+          
+          # List files in media volume to verify
+          echo "Files in media volume after sync:"
+          find /media-pvc -type f | sort
+          
+          # Set final permissions
+          chmod -R 777 /media-pvc
+          
+          echo "Media sync completed"
+        volumeMounts:
+        - name: media-volume
+          mountPath: /app/media
+      - name: fix-permissions
+        image: busybox
+        command: ['sh', '-c', 'chmod -R 777 /staticfiles']
+        volumeMounts:
+        - name: static-volume
+          mountPath: /staticfiles
+      containers:
+        - name: backend
+          image: mikhailg215/bonsai-backend:latest
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          ports:
+            - containerPort: 8000
+          command: ["/app/entrypoint.sh"]
+          args: ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application", "--workers", "3"]
+          envFrom:
+            - configMapRef:
+                name: bonsai-config
+            - secretRef:
+                name: bonsai-secrets
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: DJANGO_SETTINGS_MODULE
+              value: "backend.settings"
+            - name: ENVIRONMENT
+              value: "production"
+            - name: DJANGO_DB_DISABLE_SSL
+              value: "True"
+            - name: DISABLE_CHATBOT
+              value: "False"
+            - name: DISABLE_BLOG
+              value: "False"
+            - name: LOAD_INITIAL_DATA
+              value: "False"
+            - name: USE_LOCAL_FILE_STORAGE
+              value: "True"
+            - name: DISABLE_AWS_STORAGE
+              value: "True"
+          volumeMounts:
+            - name: media-volume
+              mountPath: /app/media
+            - name: static-volume
+              mountPath: /app/staticfiles
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 180
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: media-volume
+          persistentVolumeClaim:
+            claimName: media-pvc
+        - name: static-volume
+          persistentVolumeClaim:
+            claimName: static-pvc

@@ -1,0 +1,247 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bonsai-frontend
+  namespace: bonsai
+  labels:
+    app: bonsai-frontend
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bonsai-frontend
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: bonsai-frontend
+        tier: frontend
+    spec:
+      initContainers:
+      - name: env-verifier
+        image: busybox
+        command:
+        - "sh"
+        - "-c"
+        - |
+          cat > /verify-script/verify-env.sh << 'EOF'
+          #!/bin/sh
+          # Init container script to verify environment and patch configs if needed
+
+          set -e
+
+          echo "=== Environment Verification Init Container ==="
+
+          # Check if VITE_MEDIA_URL is set properly
+          if [ -z "${VITE_MEDIA_URL}" ] || [ "${VITE_MEDIA_URL}" = "" ]; then
+            echo "WARNING: VITE_MEDIA_URL is not set!"
+            
+            # Construct from API_BASE_URL if possible
+            if [ -n "${VITE_API_BASE_URL}" ]; then
+              echo "Constructing VITE_MEDIA_URL from VITE_API_BASE_URL: ${VITE_API_BASE_URL}"
+              export VITE_MEDIA_URL="${VITE_API_BASE_URL}/media"
+              echo "Set VITE_MEDIA_URL to: ${VITE_MEDIA_URL}"
+            else
+              echo "WARNING: Cannot construct VITE_MEDIA_URL, API_BASE_URL not found!"
+              # Use fallback URL
+              export VITE_MEDIA_URL="${FALLBACK_URL:-http://localhost:8000}/media"
+              echo "Set VITE_MEDIA_URL to fallback URL: ${VITE_MEDIA_URL}"
+            fi
+          fi
+
+          # Output actual environment values for debugging
+          echo "=== Final Environment Variables ==="
+          echo "VITE_API_BASE_URL: ${VITE_API_BASE_URL:-not set}"
+          echo "VITE_API_URL: ${VITE_API_URL:-not set}"
+          echo "VITE_MEDIA_URL: ${VITE_MEDIA_URL:-not set}"
+          echo "VITE_STATIC_URL: ${VITE_STATIC_URL:-not set}"
+          echo "======================================="
+
+          # Create updated env-config.js template for main container
+          mkdir -p /shared-data
+          cat > /shared-data/verified-env-config.js << ENVS
+          window._env_ = {
+            VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8000}",
+            VITE_API_URL: "${VITE_API_URL:-${VITE_API_BASE_URL:-http://localhost:8000}/api}",
+            VITE_MEDIA_URL: "${VITE_MEDIA_URL:-${VITE_API_BASE_URL:-http://localhost:8000}/media}",
+            VITE_STATIC_URL: "${VITE_STATIC_URL:-${VITE_API_BASE_URL:-http://localhost:8000}/static}",
+            VITE_AUTH_TOKEN_KEY: "${VITE_AUTH_TOKEN_KEY:-bonsai_auth_token}",
+            VITE_REFRESH_TOKEN_KEY: "${VITE_REFRESH_TOKEN_KEY:-bonsai_refresh_token}",
+            VITE_ENABLE_BLOG: "${VITE_ENABLE_BLOG:-true}",
+            VITE_ENABLE_CHAT: "${VITE_ENABLE_CHAT:-true}",
+            VITE_ENABLE_REVIEWS: "${VITE_ENABLE_REVIEWS:-true}"
+          };
+          ENVS
+
+          echo "Created verified env-config.js for main container"
+          echo "Init container verification complete"
+          EOF
+          chmod +x /verify-script/verify-env.sh
+          /verify-script/verify-env.sh
+        volumeMounts:
+        - name: verify-script
+          mountPath: /verify-script
+        - name: shared-data
+          mountPath: /shared-data
+        env:
+        - name: VITE_API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_API_BASE_URL
+        - name: VITE_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_API_URL
+        - name: VITE_MEDIA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_MEDIA_URL
+        - name: VITE_STATIC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_STATIC_URL
+        - name: VITE_AUTH_TOKEN_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_AUTH_TOKEN_KEY
+              optional: true
+        - name: VITE_REFRESH_TOKEN_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_REFRESH_TOKEN_KEY
+              optional: true
+        - name: VITE_ENABLE_BLOG
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_ENABLE_BLOG
+              optional: true
+        - name: VITE_ENABLE_CHAT
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_ENABLE_CHAT
+              optional: true
+        - name: VITE_ENABLE_REVIEWS
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_ENABLE_REVIEWS
+              optional: true
+      
+      # Main container configuration
+      containers:
+      - name: frontend
+        image: mikhailg215/bonsai-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "256Mi"
+          requests:
+            cpu: "0.1"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/nginx/html/env-verified
+        env:
+        - name: VITE_API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_API_BASE_URL
+        - name: VITE_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_API_URL
+        - name: VITE_MEDIA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_MEDIA_URL
+        - name: VITE_STATIC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_STATIC_URL
+        - name: VITE_AUTH_TOKEN_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_AUTH_TOKEN_KEY
+              optional: true
+        - name: VITE_REFRESH_TOKEN_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: bonsai-config
+              key: VITE_REFRESH_TOKEN_KEY
+              optional: true
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - "sh"
+              - "-c"
+              - |
+                # Copy the verified env config if it exists
+                if [ -f /usr/share/nginx/html/env-verified/verified-env-config.js ]; then
+                  echo "Using verified environment configuration"
+                  cp /usr/share/nginx/html/env-verified/verified-env-config.js /usr/share/nginx/html/env-config.js
+                fi
+                
+                # Log final environment variables
+                echo "=== Container Environment Variables ==="
+                echo "VITE_API_BASE_URL: ${VITE_API_BASE_URL:-not set}"
+                echo "VITE_API_URL: ${VITE_API_URL:-not set}"
+                echo "VITE_MEDIA_URL: ${VITE_MEDIA_URL:-not set}"
+                echo "VITE_STATIC_URL: ${VITE_STATIC_URL:-not set}"
+                echo "======================================="
+      
+      # Volumes
+      volumes:
+      - name: verify-script
+        emptyDir: {}
+      - name: shared-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bonsai-frontend
+  namespace: bonsai
+  labels:
+    app: bonsai-frontend
+    tier: frontend
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: bonsai-frontend
+    tier: frontend
+  type: LoadBalancer 

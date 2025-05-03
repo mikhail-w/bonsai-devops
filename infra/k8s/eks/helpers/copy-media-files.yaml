@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: copy-media-files
+  namespace: bonsai
+spec:
+  template:
+    spec:
+      containers:
+      - name: copy-media
+        image: mikhailg215/bonsai-backend:latest
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          echo "Creating directories"
+          mkdir -p /media/products /media/default /media/avatars /media/posts/images
+          
+          echo "Copying files"
+          cp -r /app/media/* /media/
+          
+          echo "Setting permissions"
+          chmod -R 777 /media
+          
+          echo "Listing media files"
+          find /media -type f | grep -v ".gitkeep" 
+          
+          echo "Job completed successfully"
+        volumeMounts:
+        - name: media-volume
+          mountPath: /media
+      restartPolicy: Never
+      volumes:
+      - name: media-volume
+        persistentVolumeClaim:
+          claimName: media-pvc
+  backoffLimit: 2 
