@@ -15,7 +15,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-from storages.backends.s3boto3 import S3Boto3Storage
 
 # Load environment variables from .env file
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,17 +60,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "storages",  # Added for S3 storage
     "base",
     "blog",
     "chatbot",
 ]
-
-# HAYSTACK_CONNECTIONS = {
-#     "default": {
-#         "ENGINE": "haystack.document_stores.in_memory.InMemoryDocumentStore",
-#     }
-# }
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -145,45 +137,19 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# Storage configuration
-if ENVIRONMENT == "production":
-    # AWS S3 Configuration
-    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
-    AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN")
-    AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = None
+# Storage configuration - using local storage only
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
-    # Use S3 for static and media files in production
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        },
-        "staticfiles": {
-            "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
-        },
-    }
-
-    # Static and Media URLs for S3
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-else:
-    # Local storage configuration
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
-    }
-
-    # Local URLs
-    STATIC_URL = "/static/"
-    MEDIA_URL = "/media/"
+# Local URLs
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
 
 # Static and Media root directories
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -194,7 +160,6 @@ print("\n=== URL Configuration ===")
 print(f"MEDIA_URL: {MEDIA_URL}")
 print(f"STATIC_URL: {STATIC_URL}")
 print(f"MEDIA_ROOT: {MEDIA_ROOT}")
-
 
 # REST framework settings
 REST_FRAMEWORK = {
