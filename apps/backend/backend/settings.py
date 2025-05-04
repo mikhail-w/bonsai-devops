@@ -102,24 +102,29 @@ if ENVIRONMENT == "production":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("AWS_RDS_DB_NAME"),
-            "USER": os.getenv("AWS_RDS_USER"),
-            "PASSWORD": os.getenv("AWS_RDS_PASSWORD"),
-            "HOST": os.getenv("AWS_RDS_HOST"),
+            "NAME": os.getenv("AWS_RDS_DB_NAME", "bonsai"), 
+            "USER": os.getenv("AWS_RDS_USER", "postgres"),    
+            "PASSWORD": os.getenv("AWS_RDS_PASSWORD", "password"),  
+            "HOST": os.getenv("AWS_RDS_HOST", "localhost"),   
             "PORT": os.getenv("AWS_RDS_PORT", "5432"),
         }
     }
 else:
+    # Development/test configuration
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("DB_NAME"),
-            "USER": os.getenv("DB_USER"),
-            "PASSWORD": os.getenv("DB_PASSWORD"),
-            "HOST": os.getenv("DB_HOST"),
+            "NAME": os.getenv("DB_NAME", "bonsai_test"),       
+            "USER": os.getenv("DB_USER", "postgres"),          
+            "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),  
+            "HOST": os.getenv("DB_HOST", "localhost"),         
             "PORT": os.getenv("DB_PORT", "5432"),
+            "TEST": {                                         
+                "NAME": f"test_{os.getenv('DB_NAME', 'bonsai')}"
+            }
         }
     }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
