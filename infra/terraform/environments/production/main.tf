@@ -42,7 +42,6 @@ module "network" {
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
   availability_zones   = ["us-east-1a", "us-east-1b"]
-  common_tags          = local.common_tags
 }
 
 module "eks" {
@@ -56,7 +55,6 @@ module "eks" {
   desired_nodes      = 2
   max_nodes          = 4
   min_nodes          = 1
-  common_tags        = local.common_tags
 }
 
 module "rds" {
@@ -69,11 +67,5 @@ module "rds" {
   db_username           = "postgres"
   db_password           = data.aws_secretsmanager_secret_version.db_password.secret_string
   multi_az              = false
-  common_tags           = local.common_tags
 }
 
-variable "common_tags" {
-  description = "Common tags to be applied to all resources"
-  type        = map(string)
-  default     = {}
-}

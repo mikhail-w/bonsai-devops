@@ -131,13 +131,3 @@ resource "aws_iam_role_policy" "cluster_autoscaler" {
   })
 }
 
-# Update EKS node group with autoscaling tags
-resource "aws_eks_node_group" "main" {
-  # ... existing configuration ...
-
-  tags = {
-    "kubernetes.io/cluster/${aws_eks_cluster.main.name}"     = "owned"
-    "k8s.io/cluster-autoscaler/${aws_eks_cluster.main.name}" = "owned"
-    "k8s.io/cluster-autoscaler/enabled"                      = "TRUE"
-  }
-}
