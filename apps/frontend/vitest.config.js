@@ -7,5 +7,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     globals: true,
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost:3000',
+      },
+    },
   },
+  resolve: {
+    conditions: ['development', 'browser']
+  }
 })

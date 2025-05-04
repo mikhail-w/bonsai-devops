@@ -1,1 +1,35 @@
 import '@testing-library/jest-dom'
+import { expect, afterEach } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import * as matchers from '@testing-library/jest-dom/matchers'
+
+// Extend Vitest's expect method with methods from react-testing-library
+expect.extend(matchers)
+
+// Cleanup after each test
+afterEach(() => {
+  cleanup()
+})
+
+// Mock window.scrollTo
+window.scrollTo = () => {}
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {}
+  })
+})
+
+// Mock document.documentElement.scrollTo
+Object.defineProperty(document.documentElement, 'scrollTo', {
+  value: () => {}
+})
