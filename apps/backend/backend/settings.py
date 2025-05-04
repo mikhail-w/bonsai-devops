@@ -187,9 +187,18 @@ SIMPLE_JWT = {
 CORS_ORIGIN_ALLOW_ALL = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
-# Add CORS_ALLOWED_ORIGINS
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+# Add CORS_ALLOWED_ORIGINS - handle empty env var
+cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = cors_origins.split(",")
+else:
+    # Default to allow localhost in development
+    CORS_ALLOWED_ORIGINS = []
 
+# In development, allow all origins
+if DEBUG:
+    CORS_ORIGIN_ALLOW_ALL = True
+    
 # Add CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
     f"http://{host}" for host in ALLOWED_HOSTS

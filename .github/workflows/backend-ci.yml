@@ -48,6 +48,8 @@ jobs:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/bonsai_test
         SECRET_KEY: test_secret_key
         DEBUG: True
+        ENVIRONMENT: development
+        ALLOWED_HOSTS: localhost,127.0.0.1
       run: |
         cd apps/backend
         python manage.py test
