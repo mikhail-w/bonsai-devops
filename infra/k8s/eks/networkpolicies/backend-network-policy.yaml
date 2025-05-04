@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-restrict-access
+  namespace: bonsai
+spec:
+  podSelector:
+    matchLabels:
+      app: bonsai-backend
+      tier: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: bonsai-frontend
+          tier: frontend
+    ports:
+    - protocol: TCP
+      port: 8000 
