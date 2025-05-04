@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [ cicd-testing-no ]
+    branches: [ cicd-testing ]
     paths:
       - 'apps/backend/**'
   pull_request:
