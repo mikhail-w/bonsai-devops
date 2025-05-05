@@ -69,3 +69,4 @@ module "rds" {
   multi_az              = false
 }
 
+# Trigger infrastructure
