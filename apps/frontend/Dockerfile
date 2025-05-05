@@ -4,8 +4,15 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install necessary dependencies
-RUN apk add --no-cache python3 make g++
+# Update packages and install necessary dependencies with patched versions
+RUN apk update && apk upgrade --no-cache && \
+    apk add --no-cache python3 make g++ \
+    curl>=8.9.0-r0 \
+    libcurl>=8.9.0-r0 \
+    libexpat>=2.6.3-r0 \
+    libxml2>=2.11.8-r2 \
+    libxslt>=1.1.39-r1 \
+    xz-libs>=5.4.5-r1
 
 # Copy only package.json and package-lock.json first (for cache optimization)
 COPY package*.json ./
@@ -20,19 +27,28 @@ COPY . .
 RUN npm run build
 
 # 2. Serve it with NGINX
-FROM nginx:1.25-alpine
+FROM nginx:1.26-alpine
 
-# Remove default Nginx configs
+# Update packages and remove default Nginx configs
+RUN apk update && apk upgrade --no-cache
 RUN rm -rf /etc/nginx/conf.d/*
+
+# Install patched versions of vulnerable packages
+RUN apk add --no-cache \
+    curl>=8.9.0-r0 \
+    libcurl>=8.9.0-r0 \
+    libexpat>=2.6.3-r0 \
+    libxml2>=2.11.8-r2 \
+    libxslt>=1.1.39-r1 \
+    xz-libs>=5.4.5-r1
 
 # Copy built static files from builder stage
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
-
 # Create a runtime environment config
 RUN echo "window.ENV = {};" > /usr/share/nginx/html/env-config.js
 
-# Copy nginx 
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/templates/nginx.conf
 
 # Copy envsubst script

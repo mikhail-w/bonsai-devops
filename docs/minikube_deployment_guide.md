@@ -65,10 +65,10 @@ brew install minikube
 
 ## 🚀 Deployment Process
 
-### Note that you will first have to crate a secrets.yaml file 
+### Note that you will first have to create a secrets.yaml file 
 ## 📄 Secrets File Location
 ```bash
-infra/k8s/eks/secrets.yaml
+infra/k8s/minikube/config/secrets.yaml
 ```
 
 ###  Example Structure
@@ -95,15 +95,15 @@ stringData:
 ### 1. Using the Deployment Script
 
 The project includes an automated deployment script
-(`infra/k8s/minikube-deploy.sh`) that handles the entire deployment process. To
+(`infra/k8s/minikube/minikube-deploy.sh`) that handles the entire deployment process. To
 use it:
 
 
 ```bash
 # Make the script executable
-chmod +x infra/k8s/minikube-deploy.sh 
-# Run the deployment script and set up port forwarding automatically
-./infra/k8s/minikube-deploy.sh --background
+chmod +x infra/k8s/minikube/minikube-deploy.sh 
+# Run the deployment script (--background) sets up port forwarding automatically
+./infra/k8s/minikube/minikube-deploy.sh --background
 ```
 
 The script will:
@@ -116,6 +116,29 @@ The script will:
 - Deploy services and applications
 - Enable port forwarding for frontend and backend access
 
+🔌 What is Port Forwarding?
+
+Port forwarding allows you to access services running inside your Minikube cluster from your local machine. Since Minikube runs in a virtualized Kubernetes environment, services inside the cluster (like your backend API or frontend app) aren't directly accessible on localhost unless a path is created between your host machine and the Kubernetes pods.
+
+When you run the deployment script with the --background flag, it:
+
+    Automatically sets up port forwarding for both the frontend and backend services.
+
+    Maps internal container ports (e.g., 80, 8000) to your local machine ports (e.g., 8090, 8000).
+
+    Enables you to access the frontend via http://localhost:8090 and the backend via http://localhost:8000 in your browser or Postman.
+
+🧱 Why It's Important for WSL2 Users
+
+If you're running Minikube inside WSL2, networking behaves differently due to the separation between the Linux subsystem and the Windows host. Kubernetes services and pods running inside WSL2 don’t automatically expose ports to the Windows host — meaning that even if your app is running inside Minikube, your browser on Windows won't be able to reach it unless ports are explicitly forwarded.
+
+Port forwarding bridges that gap:
+
+    It exposes internal cluster services to localhost on your Windows machine.
+
+    Allows development workflows like browser testing, API requests, and debugging tools to function seamlessly.
+
+    Avoids the need for more complex setups like host-to-guest networking or setting up ingress and DNS resolution on Windows.
 ### 2. Manual Deployment Steps
 
 If you prefer to deploy manually, follow these steps:
@@ -160,16 +183,16 @@ kubectl config current-context
 kubectl config get-contexts
 
 # Deploy Persistent volume/storage
-kubectl apply -f infra/k8s/storage/storage.yaml
+kubectl apply -f infra/k8s/minikube/storage/storage.yaml
 
 # Deploy ConfigMap and Secrets
-kubectl apply -f infra/k8s/config/
+kubectl apply -f infra/k8s/minikube/config/
 
 # Deploy services
-kubectl apply -f infra/k8s/services/
+kubectl apply -f infra/k8s/minikube/services/
 
 # Deploy deployments
-kubectl apply -f infra/k8s/deployments/
+kubectl apply -f infra/k8s/minikube/deployments/
 
 # Enable and configure ingress
 minikube addons enable ingress
@@ -187,7 +210,7 @@ ingress-nginx-controller-xxxxx      1/1     Running   ...
 #### Apply the Ingress
 
 ```bash
-kubectl apply -f infra/k8s/ingress/ingress.yaml
+kubectl apply -f infra/k8s/minikube/ingress/ingress.yaml
 
 ```
 
@@ -320,9 +343,9 @@ Kubernetes, especially with port forwarding. Here's how to resolve them:
 
    Check these files for consistent port references:
 
-   - `infra/k8s/config/configmap.yaml`
-   - `infra/k8s/deployments/frontend-deployment.yaml`
-   - `infra/k8s/deployments/backend-deployment.yaml`
+   - `infra/k8s/minikube/config/configmap.yaml`
+   - `infra/k8s/minikube/deployments/frontend-deployment.yaml`
+   - `infra/k8s/minikube/deployments/backend-deployment.yaml`
    - `kubectl-port-forward.sh`
    - Frontend source files (for hardcoded API URLs)
 
@@ -437,7 +460,7 @@ Kubernetes, especially with port forwarding. Here's how to resolve them:
    minikube addons enable default-storageclass
 
    # Then run your deployment script
-   ./infra/k8s/minikube-deploy.sh
+   ./infra/k8s/minikube/minikube-deploy.sh
    ```
 
 ## 📈 Monitoring and Maintenance
@@ -481,7 +504,7 @@ For CI/CD pipelines, you can use the following commands in your pipeline:
 minikube start --driver=docker --cpus=4 --memory=4096
 
 # Deploy application
-./infra/k8s/minikube-deploy.sh
+./infra/k8s/minikube/minikube-deploy.sh
 
 # Run tests
 kubectl exec -it <test-pod-name> -n bonsai -- /bin/bash -c "run-tests.sh"

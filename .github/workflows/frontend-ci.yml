@@ -1,0 +1,61 @@
+# .github/workflows/frontend-ci.yml
+name: Frontend CI
+
+on:
+  push:
+    branches: [ cicd-testing ]
+    paths:
+      - 'apps/frontend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'apps/frontend/**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd apps/frontend
+          npm install
+
+      - name: Run tests
+        run: |
+          cd apps/frontend
+          npm run test:run
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          cd apps/frontend
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/bonsai-frontend:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bonsai-frontend:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/bonsai-frontend:latest
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/bonsai-frontend:${{ github.sha }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/bonsai-frontend:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/bonsai-frontend:latest

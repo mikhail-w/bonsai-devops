@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-images-config
+  namespace: bonsai
+data:
+  placeholder.jpg: |
+    iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAABGdBTUEAALGPC/xhBQAAACBjSFJN
+    AAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLR0QA/wD/AP+gvaeTAAAA
+    CXBIWXMAAA7DAAAOwwHHb6hkAAAAB3RJTUUH5AQUDyEN9Av5cQAACkpJREFUeNrt3c2Plfedx/FX
+    QcUz6i8xwUpOB8vWSVZVd9Mlq+oGb5I1VbJn5S5ZdbNYyZKaRWqzymZRtMoD6s+gMKfncHge+n3l
+    c17X4s/l+bnl9x7wHcAxfvzxxxxxxxxxx 

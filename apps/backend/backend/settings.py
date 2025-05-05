@@ -15,7 +15,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-from storages.backends.s3boto3 import S3Boto3Storage
 
 # Load environment variables from .env file
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,17 +60,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "storages",  # Added for S3 storage
     "base",
     "blog",
     "chatbot",
 ]
-
-# HAYSTACK_CONNECTIONS = {
-#     "default": {
-#         "ENGINE": "haystack.document_stores.in_memory.InMemoryDocumentStore",
-#     }
-# }
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -110,24 +102,29 @@ if ENVIRONMENT == "production":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("AWS_RDS_DB_NAME"),
-            "USER": os.getenv("AWS_RDS_USER"),
-            "PASSWORD": os.getenv("AWS_RDS_PASSWORD"),
-            "HOST": os.getenv("AWS_RDS_HOST"),
+            "NAME": os.getenv("AWS_RDS_DB_NAME", "bonsai"), 
+            "USER": os.getenv("AWS_RDS_USER", "postgres"),    
+            "PASSWORD": os.getenv("AWS_RDS_PASSWORD", "password"),  
+            "HOST": os.getenv("AWS_RDS_HOST", "localhost"),   
             "PORT": os.getenv("AWS_RDS_PORT", "5432"),
         }
     }
 else:
+    # Development/test configuration
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("DB_NAME"),
-            "USER": os.getenv("DB_USER"),
-            "PASSWORD": os.getenv("DB_PASSWORD"),
-            "HOST": os.getenv("DB_HOST"),
+            "NAME": os.getenv("DB_NAME", "bonsai_test"),       
+            "USER": os.getenv("DB_USER", "postgres"),          
+            "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),  
+            "HOST": os.getenv("DB_HOST", "localhost"),         
             "PORT": os.getenv("DB_PORT", "5432"),
+            "TEST": {                                         
+                "NAME": f"test_{os.getenv('DB_NAME', 'bonsai')}"
+            }
         }
     }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -145,45 +142,19 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# Storage configuration
-if ENVIRONMENT == "production":
-    # AWS S3 Configuration
-    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
-    AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN")
-    AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = None
+# Storage configuration - using local storage only
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
-    # Use S3 for static and media files in production
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        },
-        "staticfiles": {
-            "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
-        },
-    }
-
-    # Static and Media URLs for S3
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-else:
-    # Local storage configuration
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
-    }
-
-    # Local URLs
-    STATIC_URL = "/static/"
-    MEDIA_URL = "/media/"
+# Local URLs
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
 
 # Static and Media root directories
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -194,7 +165,6 @@ print("\n=== URL Configuration ===")
 print(f"MEDIA_URL: {MEDIA_URL}")
 print(f"STATIC_URL: {STATIC_URL}")
 print(f"MEDIA_ROOT: {MEDIA_ROOT}")
-
 
 # REST framework settings
 REST_FRAMEWORK = {
@@ -217,9 +187,18 @@ SIMPLE_JWT = {
 CORS_ORIGIN_ALLOW_ALL = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
-# Add CORS_ALLOWED_ORIGINS
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+# Add CORS_ALLOWED_ORIGINS - handle empty env var
+cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = cors_origins.split(",")
+else:
+    # Default to allow localhost in development
+    CORS_ALLOWED_ORIGINS = []
 
+# In development, allow all origins
+if DEBUG:
+    CORS_ORIGIN_ALLOW_ALL = True
+    
 # Add CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
     f"http://{host}" for host in ALLOWED_HOSTS
