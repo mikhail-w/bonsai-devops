@@ -24,12 +24,44 @@ jobs:
 
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --name bonsai-cluster --region us-east-1
-
-      - name: Deploy to Kubernetes
+        
+      - name: Create or verify namespace
         run: |
-          kubectl apply -f infra/k8s/eks/deployments/
-          kubectl apply -f infra/k8s/eks/services/
-          kubectl apply -f infra/k8s/eks/networkpolicies/
-          kubectl apply -f infra/k8s/eks/storage/
-          kubectl apply -f infra/k8s/eks/autoscaling/  
-          kubectl apply -f infra/k8s/eks/ingress.yaml
+          if kubectl get namespace bonsai &> /dev/null; then
+            echo "Namespace 'bonsai' already exists"
+          else
+            echo "Creating namespace 'bonsai'"
+            kubectl apply -f infra/k8s/eks/namespace.yaml
+          fi
+          
+      - name: Create storage resources
+        run: kubectl apply -f infra/k8s/eks/storage/
+
+      - name: Apply configurations
+        run: |
+          kubectl apply -f infra/k8s/eks/config/configmap.yaml
+          kubectl apply -f infra/k8s/eks/config/nginx-config.yaml
+
+      - name: Deploy services
+        run: kubectl apply -f infra/k8s/eks/services/
+
+      - name: Deploy applications
+        run: kubectl apply -f infra/k8s/eks/deployments/
+
+      - name: Apply network policies
+        run: kubectl apply -f infra/k8s/eks/networkpolicies/
+
+      - name: Apply autoscaling
+        run: kubectl apply -f infra/k8s/eks/autoscaling/
+        
+      - name: Apply ingress
+        run: kubectl apply -f infra/k8s/eks/ingress/
+
+      - name: Verify deployment
+        run: |
+          echo "Checking deployment status..."
+          kubectl get pods -n bonsai
+          kubectl get services -n bonsai
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app=bonsai-backend -n bonsai --timeout=300s || true
+          kubectl wait --for=condition=ready pod -l app=bonsai-frontend -n bonsai --timeout=300s || true
