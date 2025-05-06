@@ -135,6 +135,8 @@ spec:
           echo "Media sync completed"
         volumeMounts:
         - name: media-volume
+          mountPath: /media-pvc
+        - name: media-container
           mountPath: /app/media
       - name: fix-permissions
         image: busybox
@@ -143,72 +145,74 @@ spec:
         - name: static-volume
           mountPath: /staticfiles
       containers:
-        - name: backend
-          image: mikhailg215/bonsai-backend:latest
-          imagePullPolicy: Always
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-          ports:
-            - containerPort: 8000
-          command: ["/app/entrypoint.sh"]
-          args: ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application", "--workers", "3"]
-          envFrom:
-            - configMapRef:
-                name: bonsai-config
-            - secretRef:
-                name: bonsai-secrets
-          env:
-            - name: PYTHONUNBUFFERED
-              value: "1"
-            - name: DJANGO_SETTINGS_MODULE
-              value: "backend.settings"
-            - name: ENVIRONMENT
-              value: "production"
-            - name: DJANGO_DB_DISABLE_SSL
-              value: "True"
-            - name: DISABLE_CHATBOT
-              value: "False"
-            - name: DISABLE_BLOG
-              value: "False"
-            - name: LOAD_INITIAL_DATA
-              value: "False"
-            - name: USE_LOCAL_FILE_STORAGE
-              value: "True"
-            - name: DISABLE_AWS_STORAGE
-              value: "True"
-          volumeMounts:
-            - name: media-volume
-              mountPath: /app/media
-            - name: static-volume
-              mountPath: /app/staticfiles
-          readinessProbe:
-            httpGet:
-              path: /health/
-              port: 8000
-            initialDelaySeconds: 120
-            periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /health/
-              port: 8000
-            initialDelaySeconds: 180
-            periodSeconds: 60
-            timeoutSeconds: 5
-            failureThreshold: 3
-          resources:
-            limits:
-              cpu: "1000m"
-              memory: "1Gi"
-            requests:
-              cpu: "500m"
-              memory: "512Mi"
+      - name: backend
+        image: mikhailg215/bonsai-backend:latest
+        imagePullPolicy: Always
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+        ports:
+          - containerPort: 8000
+        command: ["/app/entrypoint.sh"]
+        args: ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application", "--workers", "3"]
+        envFrom:
+          - configMapRef:
+              name: bonsai-config
+          - secretRef:
+              name: bonsai-secrets
+        env:
+          - name: PYTHONUNBUFFERED
+            value: "1"
+          - name: DJANGO_SETTINGS_MODULE
+            value: "backend.settings"
+          - name: ENVIRONMENT
+            value: "production"
+          - name: DJANGO_DB_DISABLE_SSL
+            value: "True"
+          - name: DISABLE_CHATBOT
+            value: "False"
+          - name: DISABLE_BLOG
+            value: "False"
+          - name: LOAD_INITIAL_DATA
+            value: "False"
+          - name: USE_LOCAL_FILE_STORAGE
+            value: "True"
+          - name: DISABLE_AWS_STORAGE
+            value: "True"
+        volumeMounts:
+          - name: media-volume
+            mountPath: /app/media
+          - name: static-volume
+            mountPath: /app/staticfiles
+        readinessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 180
+          periodSeconds: 60
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
       volumes:
-        - name: media-volume
-          emptyDir: {}
-        - name: media-container
-          emptyDir: {}
-        - name: static-volume
-          emptyDir: {}
+      - name: media-volume
+        persistentVolumeClaim:
+          claimName: media-pvc
+      - name: media-container
+        emptyDir: {}
+      - name: static-volume
+        persistentVolumeClaim:
+          claimName: static-pvc
