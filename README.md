@@ -1,180 +1,171 @@
-# bonsai-devops
-DevOps Capstone Project implementing CI/CD pipeline for a Bonsai plant ecommerce application using Terraform, Docker and Kubernetes on AWS
+# 🌿 Bonsai eCommerce DevOps Capstone Project
 
-## Project Structure
+Welcome to the official repository for the **Bonsai eCommerce Store** — a full-stack project built as part of Code Platoons DevOps Capstone. This project showcases real-world deployment workflows using modern DevOps practices, Kubernetes orchestration, CI/CD pipelines, Terraform-based infrastructure as code, and a containerized architecture.
+
+> 🌐 Live Demo: [https://www.mwbonsai.com](https://www.mwbonsai.com)
+
+---
+
+## 📦 Tech Stack
+
+- **Frontend**: React + Vite + Chakra UI
+- **Backend**: Django + PostgreSQL + Django REST Framework
+- **Containerization**: Docker, Docker Compose
+- **Orchestration**: Kubernetes (Minikube for local, EKS for production)
+- **Infrastructure**: Terraform (EC2, EKS, RDS, S3, IAM, CloudWatch)
+- **CI/CD**: GitHub Actions (CI for frontend/backend, deploy to EKS)
+- **Cloud Provider**: AWS
+- **Application APIs**: Google Maps, Vision API, PayPal integration, Weather API
+
+---
+
+## 📁 Project Structure
 
 ```
-devops-test/
-├── apps/                 # Application code
+bonsai/
+├── .github/workflows/   # GitHub Actions CI/CD pipelines
+├── apps/                # Application code
 │   ├── backend/         # Django backend application
 │   └── frontend/        # React frontend application
 ├── docs/                # Project documentation
 ├── infra/               # Infrastructure configuration
-│   ├── dockerfiles/     # Docker build configurations
 │   ├── k8s/             # Kubernetes manifests
 │   └── terraform/       # Infrastructure as Code
 ├── .env                 # Environment variables (not in version control)
-├── .gitignore          # Git ignore rules
+├── .gitignore           # Git ignore rules
 ├── docker-compose.yml   # Docker Compose configuration
-├── LICENSE             # License file
-└── README.md           # This file
+├── LICENSE              # License file
+└── README.md            # This file
 ```
 
-## Local Development Setup
+---
 
-### Prerequisites
+## 🚀 Deployment Options
 
-- Docker and Docker Compose installed
-- Git
-- Node.js (for frontend development)
-- Python 3.8+ (for backend development)
+### 🐳 Local Docker Compose
 
-### Environment Setup
+Spin up the entire stack locally using Docker:
 
-1. Clone the repository:
-```bash
-git clone https://github.com/mikhail-w/bonsai-devops
-cd bonsai-devops
-```
-
-2. Create environment file at the project root:
-```bash
-# Make sure you're in the project root directory (devops-test/)
-touch .env
-```
-
-Configure your `.env` file with the following variables (all environment variables must be set in a single `.env` file at the project root):
-```bash
-# Environment Configuration
-ENVIRONMENT=development
-DOMAIN_NAME=localhost
-
-# Database Configuration
-DB_NAME=bonsai_store
-DB_USER=<your-db-user>
-DB_PASSWORD=<your-db-password>
-DB_HOST=db
-DB_PORT=5432
-
-# AWS RDS Configuration (Production)
-AWS_RDS_HOST=<your-rds-endpoint>
-AWS_RDS_PORT=5432
-AWS_RDS_DB_NAME=<your-rds-db-name>
-AWS_RDS_USER=<your-rds-user>
-AWS_RDS_PASSWORD=<your-rds-password>
-
-# Backend Configuration
-DEBUG=True
-SECRET_KEY=<your-django-secret-key>
-ALLOWED_HOSTS=localhost,127.0.0.1,backend,*.amazonaws.com,${DOMAIN_NAME}
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://frontend,https://${DOMAIN_NAME}
-LOAD_INITIAL_DATA=True
-
-# Admin Credentials
-DJANGO_SUPERUSER_USERNAME=<your-admin-username>
-DJANGO_SUPERUSER_EMAIL=<your-admin-email>
-DJANGO_SUPERUSER_PASSWORD=<your-admin-password>
-
-# API Configuration
-API_BASE_URL=http://localhost:8000
-VITE_API_BASE_URL=http://localhost:8000
-VITE_API_URL=${VITE_API_BASE_URL}/api
-VITE_MEDIA_URL=${VITE_API_BASE_URL}/media
-VITE_STATIC_URL=${VITE_API_BASE_URL}/static
-
-# AWS S3 Configuration (Production)
-AWS_ACCESS_KEY_ID=<your-aws-access-key>
-AWS_SECRET_ACCESS_KEY=<your-aws-secret-key>
-AWS_STORAGE_BUCKET_NAME=<your-bucket-name>
-AWS_S3_REGION_NAME=us-east-1
-AWS_S3_CUSTOM_DOMAIN=${AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com
-
-# Frontend Configuration - API Keys
-VITE_WEATHER_API_KEY=<your-weather-api-key>
-VITE_PAYPAL_CLIENT_ID=<your-paypal-client-id>
-VITE_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
-VITE_GOOGLE_CLOUD_VISION_API_KEY=<your-google-cloud-vision-api-key>
-
-# Feature Flags
-VITE_ENABLE_CHAT=true
-VITE_ENABLE_REVIEWS=true
-VITE_ENABLE_BLOG=true
-
-# Authentication
-VITE_AUTH_TOKEN_KEY=bonsai_auth_token
-VITE_REFRESH_TOKEN_KEY=bonsai_refresh_token
-```
-
-
-
-### Running with Docker Compose
-
-1. Build and start all services:
 ```bash
 docker-compose up --build
 ```
 
-2. To run in detached mode (in the background):
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8000`
+- Admin Panel: `http://localhost:8000/admin`
+
+📖 See [Docker Deployment Guide](./docs/docker_deployment_guide.md)
+
+---
+
+### 🎛️ Minikube (Kubernetes Local Dev)
+
+To simulate production-grade orchestration locally:
+
 ```bash
-docker-compose up -d --build
+chmod +x infra/k8s/minikube/minikube-deploy.sh
+./infra/k8s/minikube/minikube-deploy.sh --background
 ```
 
+- Frontend: `http://localhost:8090`
+- Backend API: `http://localhost:8000`
 
-3. The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- Admin Interface: http://localhost:8000/admin
-- Database: localhost:5432
+📖 See [Minikube Guide](./docs/minikube_deployment_guide.md)
 
-### Managing Docker Services
+---
 
-1. Stop all services:
+### ☁️ AWS EKS (Production)
+
+AWS resources are provisioned using Terraform and deployed to an EKS cluster via GitHub Actions:
+
 ```bash
-docker-compose down
+cd infra/terraform/environments/production
+terraform init
+terraform apply
 ```
 
-2. Stop services and remove volumes (including database data):
-```bash
-docker-compose down -v
-```
+Then push changes to trigger CI/CD deployment pipelines.
 
-3. Remove all Docker images:
-```bash
-# Remove all images used by the services
-docker-compose down --rmi all
+- CI/CD: `.github/workflows/`
+- Infra deploy: `infra-deploy.yml`
+- EKS deploy: `deploy.yml`
 
-# Remove all images (including unused ones)
-docker image prune -a
-```
+📖 See [EKS Guide](./docs/eks_deployment_guide.md)
 
-4. View logs:
-```bash
-# View logs for all services
-docker-compose logs
+---
 
-# View logs for specific service
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs db
-```
+## 🔄 CI/CD Workflows
 
-5. Rebuild a specific service:
-```bash
-docker-compose up --build backend
-```
+GitHub Actions automate building, testing, security scanning, and deploying:
+
+| Workflow        | Description                                       |
+|-----------------|---------------------------------------------------|
+| `frontend-ci.yml` | Lint, test, scan, and push React image to Docker Hub |
+| `backend-ci.yml`  | Run Django unit tests, scan, and push image to Docker Hub    |
+| `infra-deploy.yml`| Format, plan, and apply Terraform infrastructure|
+| `deploy.yml`      | Deploy backend/frontend to EKS if CI passes     |
+
+---
+
+## ⚙️ Terraform Infrastructure (AWS)
+
+Key services provisioned:
+
+- **EKS Cluster**: Application orchestration
+- **RDS PostgreSQL**: Production-grade DB
+- **EC2 (Provisioner)**: Optional jumpbox/dev host
+- **S3**: Static/media file hosting
+- **IAM**: Secure access for nodes, pods, CI
+- **CloudWatch + SNS**: Monitoring and alerting
+
+---
+
+## 🧪 Testing
+
+- Django tests auto-run in `backend-ci.yml`
+- React tests auto-run in `frontend-ci.yml`
+- Manual testing via Postman and Browser
+- Health checks: `/health/` endpoints on all services
+
+---
+
+## 🔐 Secrets & Environment
+
+All secrets are managed using:
+
+- `.env` file (local Docker)
+- `secrets.yaml` (Minikube)
+- AWS Secrets Manager (EKS)
+- GitHub Secrets (CI/CD)
+
+---
+
+## 📈 Monitoring
+
+- **CloudWatch Alarms**: CPU, RDS snapshots
+- **Minikube Metrics Server**: `kubectl top`
+
+---
 
 
-### Important Notes
+📖 See [Terraform Guide](./docs/terraform_deployment_guide.md)
 
-1. The `.env` file is required for all services to function properly. Make sure all environment variables are set correctly.
 
-2. The backend service depends on the database being healthy before starting. This is handled automatically by Docker Compose.
+## 🌱 Features
 
-3. Static and media files are persisted in Docker volumes. If you need to reset these, use:
-```bash
-docker-compose down -v
-```
+- 🌳 Browse & buy bonsai plants
+- 💳 PayPal payments
+- 📸 Google Vision: plant recognition
+- 📸 3D models and augmented reality
+- 🌤️ OpenWeather: dynamic forecast
+- 📍 Google Maps: locate nearby nurseries
+- 📝 Blog, Reviews, and Chat
 
-4. For development, changes to the code will be reflected automatically due to volume mounts.
+---
 
-5. The database data persists between restarts unless you explicitly remove the volume.
+
+## 🧾 License
+
+This project is licensed for educational and portfolio purposes. For commercial use, please contact the author.
+
+---

@@ -1,4 +1,4 @@
-# 🌿 Bonsai App - Complete Docker Deployment Guide
+# 🌿 DevOps Capstone Bonsai App - Complete Docker Deployment Guide
 
 Welcome to the comprehensive guide for setting up and running the Bonsai application using Docker! This guide reflects the current state of the project and will walk you through setting up both the **backend (Django)** and **frontend (React/Vite)** components, connecting them with **Docker Compose**, and managing environment variables.
 
@@ -49,9 +49,7 @@ Ensure you have the following installed:
 
 ```
 bonsai/
-├── .github/
-│   └── workflows/
-│       └── deploy.yml
+├── .github/workflows/   
 ├── apps/
 │   ├── backend/
 │   │   ├── Dockerfile
