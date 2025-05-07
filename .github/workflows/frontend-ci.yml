@@ -3,7 +3,7 @@ name: Frontend CI
 
 on:
   push:
-    branches: [ cicd-testing ]
+    branches: [ main ]
     paths:
       - 'apps/frontend/**'
   pull_request:

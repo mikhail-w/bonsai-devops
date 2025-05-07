@@ -1,4 +1,4 @@
-# 🚀 Bonsai Project: Comprehensive Minikube Deployment Guide
+# 🚀 DevOps Capstone Bonsai App - Comprehensive Minikube Deployment Guide
 
 ## 📚 What is Minikube?
 

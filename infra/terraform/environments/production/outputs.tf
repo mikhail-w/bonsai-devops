@@ -1,6 +1,6 @@
 output "vpc_id" {
   description = "ID of the VPC"
-  value       = module.network.vpc_id
+  value       = local.existing_vpc_id
 }
 
 output "eks_cluster_endpoint" {
@@ -21,4 +21,4 @@ output "rds_port" {
 output "rds_username" {
   description = "Username of the RDS instance"
   value       = module.rds.db_instance_username
-} 
+}

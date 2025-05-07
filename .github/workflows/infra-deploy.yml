@@ -2,7 +2,7 @@ name: Infrastructure Deployment
 
 on:
   push:
-    branches: [main-no, cicd-testing]
+    branches: [main]
     paths:
       - 'infra/terraform/**'
   pull_request:

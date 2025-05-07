@@ -27,6 +27,10 @@ locals {
     ManagedBy   = "terraform"
     Team        = "team-bonsai"
   }
+  
+  # Use existing VPC and its subnets
+  existing_vpc_id = "vpc-0abcf9158d16a7ff7"
+  existing_rds_subnet_ids = ["subnet-04433ceb10c7f5895", "subnet-09e2030ace093e47b"]
 }
 
 # FETCH SECRET FROM SECRETS MANAGER
@@ -34,22 +38,12 @@ data "aws_secretsmanager_secret_version" "db_password" {
   secret_id = "bonsai/db_password"
 }
 
-module "network" {
-  source = "../../modules/network"
-
-  project_name         = "bonsai"
-  vpc_cidr             = "10.0.0.0/16"
-  public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
-  availability_zones   = ["us-east-1a", "us-east-1b"]
-}
-
 module "eks" {
   source = "../../modules/eks"
 
   project_name       = "bonsai"
-  vpc_id             = module.network.vpc_id
-  subnet_ids         = module.network.private_subnet_ids
+  vpc_id             = local.existing_vpc_id
+  subnet_ids         = local.existing_rds_subnet_ids
   kubernetes_version = "1.27"
   instance_types     = ["t3.medium"]
   desired_nodes      = 2
@@ -61,11 +55,10 @@ module "rds" {
   source = "../../modules/rds"
 
   project_name          = "bonsai"
-  vpc_id                = module.network.vpc_id
-  subnet_ids            = module.network.private_subnet_ids
+  vpc_id                = local.existing_vpc_id
+  subnet_ids            = local.existing_rds_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
   db_username           = "postgres"
   db_password           = data.aws_secretsmanager_secret_version.db_password.secret_string
   multi_az              = false
 }
-
